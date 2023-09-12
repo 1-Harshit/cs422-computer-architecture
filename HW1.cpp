@@ -3,11 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-/*! @file
- *  This is an example of the PIN tool that demonstrates some basic PIN APIs
- *  and could serve as the starting point for developing your first PIN tool
- */
-
 #include "pin.H"
 #include <iostream>
 #include <fstream>
@@ -15,7 +10,7 @@ using std::cerr;
 using std::endl;
 using std::string;
 
-typedef struct _InstCount
+typedef struct _InstMetrics
 {
     UINT64 numInst = 0;
     UINT64 numLoads = 0;
@@ -35,7 +30,7 @@ typedef struct _InstCount
     UINT64 numSysCalls = 0;
     UINT64 numFP = 0;
     UINT64 numRest = 0;
-} InstCount;
+} InstMetrics;
 
 /* ================================================================== */
 // Global variables
@@ -44,7 +39,7 @@ typedef struct _InstCount
 UINT64 insCount = 0; // number of dynamically executed instructions
 UINT64 bblCount = 0; // number of dynamically executed basic blocks
 UINT64 fastForward = 0;
-InstCount *instCount = 0;
+InstMetrics *instMetrics = 0;
 
 std::ostream *out = &cerr;
 
@@ -53,11 +48,8 @@ std::ostream *out = &cerr;
 /* ===================================================================== */
 KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "", "specify file name for MyPinTool output");
 
-KNOB<BOOL> KnobCount(KNOB_MODE_WRITEONCE, "pintool", "count", "1",
-                     "count instructions, basic blocks and threads in the application");
-
 KNOB<UINT64> KnobFastForward(KNOB_MODE_WRITEONCE, "pintool", "f", "0",
-                             "fast forward this billion many instructions before starting to collect data");
+                             "fast forward this many billion instructions before starting to collect data");
 
 /* ===================================================================== */
 // Utilities
@@ -82,32 +74,31 @@ INT32 Usage()
 /* ===================================================================== */
 
 /*!
- * Increase counter of the executed basic blocks and instructions.
  * This function is called for every basic block when it is about to be executed.
  * @param[in]   bblInstCount Instruction of various instructions in the basic block
  * @note use atomic operations for multi-threaded applications
  */
-VOID CountBbl(InstCount *bblInstCount)
+VOID AnalyseBblMetrics(InstMetrics *bblInstCount)
 {
     bblCount++;
-    instCount->numInst += bblInstCount->numInst;
-    instCount->numLoads += bblInstCount->numLoads;
-    instCount->numStores += bblInstCount->numStores;
-    instCount->numNops += bblInstCount->numNops;
-    instCount->numDirectCalls += bblInstCount->numDirectCalls;
-    instCount->numIndirectCalls += bblInstCount->numIndirectCalls;
-    instCount->numReturns += bblInstCount->numReturns;
-    instCount->numUncondBranches += bblInstCount->numUncondBranches;
-    instCount->numCondBranches += bblInstCount->numCondBranches;
-    instCount->numLogicalOps += bblInstCount->numLogicalOps;
-    instCount->numRotateShift += bblInstCount->numRotateShift;
-    instCount->numFlagOps += bblInstCount->numFlagOps;
-    instCount->numVector += bblInstCount->numVector;
-    instCount->numCondMoves += bblInstCount->numCondMoves;
-    instCount->numMMXSSE += bblInstCount->numMMXSSE;
-    instCount->numSysCalls += bblInstCount->numSysCalls;
-    instCount->numFP += bblInstCount->numFP;
-    instCount->numRest += bblInstCount->numRest;
+    instMetrics->numInst += bblInstCount->numInst;
+    instMetrics->numLoads += bblInstCount->numLoads;
+    instMetrics->numStores += bblInstCount->numStores;
+    instMetrics->numNops += bblInstCount->numNops;
+    instMetrics->numDirectCalls += bblInstCount->numDirectCalls;
+    instMetrics->numIndirectCalls += bblInstCount->numIndirectCalls;
+    instMetrics->numReturns += bblInstCount->numReturns;
+    instMetrics->numUncondBranches += bblInstCount->numUncondBranches;
+    instMetrics->numCondBranches += bblInstCount->numCondBranches;
+    instMetrics->numLogicalOps += bblInstCount->numLogicalOps;
+    instMetrics->numRotateShift += bblInstCount->numRotateShift;
+    instMetrics->numFlagOps += bblInstCount->numFlagOps;
+    instMetrics->numVector += bblInstCount->numVector;
+    instMetrics->numCondMoves += bblInstCount->numCondMoves;
+    instMetrics->numMMXSSE += bblInstCount->numMMXSSE;
+    instMetrics->numSysCalls += bblInstCount->numSysCalls;
+    instMetrics->numFP += bblInstCount->numFP;
+    instMetrics->numRest += bblInstCount->numRest;
 }
 
 VOID DoInsCount(UINT64 bblInsCount)
@@ -135,7 +126,7 @@ VOID Terminate(void)
 /* ===================================================================== */
 
 /*!
- * Insert call to the CountBbl() analysis routine before every basic block
+ * Insert call to the AnalyseBblMetrics() analysis routine before every basic block
  * of the trace.
  * This function is called every time a new trace is encountered.
  * @param[in]   trace    trace to be instrumented
@@ -147,7 +138,7 @@ VOID Trace(TRACE trace, VOID *v)
     // Visit every basic block in the trace
     for (BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl = BBL_Next(bbl))
     {
-        InstCount *bblInstCount = new InstCount();
+        InstMetrics *bblInstCount = new InstMetrics();
 
         bblInstCount->numInst = BBL_NumIns(bbl);
 
@@ -223,12 +214,11 @@ VOID Trace(TRACE trace, VOID *v)
             }
         }
 
-        // Insert a call to CountBbl() before every basic bloc, passing the pointer to instcount
         BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)DoInsCount, IARG_UINT64, bblInstCount->numInst, IARG_END);
         BBL_InsertIfCall(bbl, IPOINT_BEFORE, (AFUNPTR)CheckTerminate, IARG_END);
         BBL_InsertThenCall(bbl, IPOINT_BEFORE, (AFUNPTR)Terminate, IARG_END);
         BBL_InsertIfCall(bbl, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
-        BBL_InsertThenCall(bbl, IPOINT_BEFORE, (AFUNPTR)CountBbl, IARG_PTR, bblInstCount, IARG_END);
+        BBL_InsertThenCall(bbl, IPOINT_BEFORE, (AFUNPTR)AnalyseBblMetrics, IARG_PTR, bblInstCount, IARG_END);
     }
 }
 
@@ -246,24 +236,24 @@ VOID Fini(INT32 code, VOID *v)
     *out << "Number of instructions: " << insCount << endl;
     *out << "Fast forward at: " << fastForward << endl;
     *out << "Number of basic blocks: " << bblCount << endl;
-    *out << "Number of instructions: " << instCount->numInst << endl;
-    *out << "Number of loads: " << instCount->numLoads << endl;
-    *out << "Number of stores: " << instCount->numStores << endl;
-    *out << "Number of nops: " << instCount->numNops << endl;
-    *out << "Number of direct calls: " << instCount->numDirectCalls << endl;
-    *out << "Number of indirect calls: " << instCount->numIndirectCalls << endl;
-    *out << "Number of returns: " << instCount->numReturns << endl;
-    *out << "Number of unconditional branches: " << instCount->numUncondBranches << endl;
-    *out << "Number of conditional branches: " << instCount->numCondBranches << endl;
-    *out << "Number of logical operations: " << instCount->numLogicalOps << endl;
-    *out << "Number of rotate/shift operations: " << instCount->numRotateShift << endl;
-    *out << "Number of flag operations: " << instCount->numFlagOps << endl;
-    *out << "Number of vector operations: " << instCount->numVector << endl;
-    *out << "Number of conditional moves: " << instCount->numCondMoves << endl;
-    *out << "Number of MMX/SSE operations: " << instCount->numMMXSSE << endl;
-    *out << "Number of system calls: " << instCount->numSysCalls << endl;
-    *out << "Number of floating point operations: " << instCount->numFP << endl;
-    *out << "Number of other instructions: " << instCount->numRest << endl;
+    *out << "Number of instructions: " << instMetrics->numInst << endl;
+    *out << "Number of loads: " << instMetrics->numLoads << endl;
+    *out << "Number of stores: " << instMetrics->numStores << endl;
+    *out << "Number of nops: " << instMetrics->numNops << endl;
+    *out << "Number of direct calls: " << instMetrics->numDirectCalls << endl;
+    *out << "Number of indirect calls: " << instMetrics->numIndirectCalls << endl;
+    *out << "Number of returns: " << instMetrics->numReturns << endl;
+    *out << "Number of unconditional branches: " << instMetrics->numUncondBranches << endl;
+    *out << "Number of conditional branches: " << instMetrics->numCondBranches << endl;
+    *out << "Number of logical operations: " << instMetrics->numLogicalOps << endl;
+    *out << "Number of rotate/shift operations: " << instMetrics->numRotateShift << endl;
+    *out << "Number of flag operations: " << instMetrics->numFlagOps << endl;
+    *out << "Number of vector operations: " << instMetrics->numVector << endl;
+    *out << "Number of conditional moves: " << instMetrics->numCondMoves << endl;
+    *out << "Number of MMX/SSE operations: " << instMetrics->numMMXSSE << endl;
+    *out << "Number of system calls: " << instMetrics->numSysCalls << endl;
+    *out << "Number of floating point operations: " << instMetrics->numFP << endl;
+    *out << "Number of other instructions: " << instMetrics->numRest << endl;
     *out << "===============================================" << endl;
 }
 
@@ -290,25 +280,14 @@ int main(int argc, char *argv[])
         out = new std::ofstream(fileName.c_str());
     }
 
-    instCount = new InstCount();
-    fastForward = 207 * 1e9;
+    instMetrics = new InstMetrics();
+    fastForward = KnobFastForward.Value() * 1e9;
 
-    if (KnobCount)
-    {
-        // Register function to be called to instrument traces
-        TRACE_AddInstrumentFunction(Trace, 0);
+    // Register function to be called to instrument traces
+    TRACE_AddInstrumentFunction(Trace, 0);
 
-        // Register function to be called when the application exits
-        PIN_AddFiniFunction(Fini, 0);
-    }
-
-    cerr << "===============================================" << endl;
-    cerr << "This application is instrumented by MyPinTool" << endl;
-    if (!KnobOutputFile.Value().empty())
-    {
-        cerr << "See file " << KnobOutputFile.Value() << " for analysis results" << endl;
-    }
-    cerr << "===============================================" << endl;
+    // Register function to be called when the application exits
+    PIN_AddFiniFunction(Fini, 0);
 
     // Start the program, never returns
     PIN_StartProgram();
@@ -316,6 +295,3 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-/* ===================================================================== */
-/* eof */
-/* ===================================================================== */
