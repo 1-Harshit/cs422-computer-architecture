@@ -15,13 +15,36 @@ using std::cerr;
 using std::endl;
 using std::string;
 
+typedef struct _InstCount
+{
+    UINT64 numInst = 0;
+    UINT64 numLoads = 0;
+    UINT64 numStores = 0;
+    UINT64 numNops = 0;
+    UINT64 numDirectCalls = 0;
+    UINT64 numIndirectCalls = 0;
+    UINT64 numReturns = 0;
+    UINT64 numUncondBranches = 0;
+    UINT64 numCondBranches = 0;
+    UINT64 numLogicalOps = 0;
+    UINT64 numRotateShift = 0;
+    UINT64 numFlagOps = 0;
+    UINT64 numVector = 0;
+    UINT64 numCondMoves = 0;
+    UINT64 numMMXSSE = 0;
+    UINT64 numSysCalls = 0;
+    UINT64 numFP = 0;
+    UINT64 numRest = 0;
+} InstCount;
+
 /* ================================================================== */
 // Global variables
 /* ================================================================== */
 
-UINT64 insCount = 0;    // number of dynamically executed instructions
-UINT64 bblCount = 0;    // number of dynamically executed basic blocks
-UINT64 threadCount = 0; // total number of threads, including main thread
+UINT64 insCount = 0; // number of dynamically executed instructions
+UINT64 bblCount = 0; // number of dynamically executed basic blocks
+UINT64 fastForward = 0;
+InstCount *instCount = 0;
 
 std::ostream *out = &cerr;
 
@@ -32,6 +55,9 @@ KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "", "specify fi
 
 KNOB<BOOL> KnobCount(KNOB_MODE_WRITEONCE, "pintool", "count", "1",
                      "count instructions, basic blocks and threads in the application");
+
+KNOB<UINT64> KnobFastForward(KNOB_MODE_WRITEONCE, "pintool", "f", "0",
+                             "fast forward this billion many instructions before starting to collect data");
 
 /* ===================================================================== */
 // Utilities
@@ -58,13 +84,50 @@ INT32 Usage()
 /*!
  * Increase counter of the executed basic blocks and instructions.
  * This function is called for every basic block when it is about to be executed.
- * @param[in]   numInstInBbl    number of instructions in the basic block
+ * @param[in]   bblInstCount Instruction of various instructions in the basic block
  * @note use atomic operations for multi-threaded applications
  */
-VOID CountBbl(UINT32 numInstInBbl)
+VOID CountBbl(InstCount *bblInstCount)
 {
     bblCount++;
-    insCount += numInstInBbl;
+    instCount->numInst += bblInstCount->numInst;
+    instCount->numLoads += bblInstCount->numLoads;
+    instCount->numStores += bblInstCount->numStores;
+    instCount->numNops += bblInstCount->numNops;
+    instCount->numDirectCalls += bblInstCount->numDirectCalls;
+    instCount->numIndirectCalls += bblInstCount->numIndirectCalls;
+    instCount->numReturns += bblInstCount->numReturns;
+    instCount->numUncondBranches += bblInstCount->numUncondBranches;
+    instCount->numCondBranches += bblInstCount->numCondBranches;
+    instCount->numLogicalOps += bblInstCount->numLogicalOps;
+    instCount->numRotateShift += bblInstCount->numRotateShift;
+    instCount->numFlagOps += bblInstCount->numFlagOps;
+    instCount->numVector += bblInstCount->numVector;
+    instCount->numCondMoves += bblInstCount->numCondMoves;
+    instCount->numMMXSSE += bblInstCount->numMMXSSE;
+    instCount->numSysCalls += bblInstCount->numSysCalls;
+    instCount->numFP += bblInstCount->numFP;
+    instCount->numRest += bblInstCount->numRest;
+}
+
+VOID DoInsCount(UINT64 bblInsCount)
+{
+    insCount += bblInsCount;
+}
+
+ADDRINT CheckFastForward(void)
+{
+    return (insCount >= fastForward);
+}
+
+ADDRINT CheckTerminate(void)
+{
+    return (insCount >= fastForward + 1e9);
+}
+
+VOID Terminate(void)
+{
+    PIN_ExitApplication(0);
 }
 
 /* ===================================================================== */
@@ -84,22 +147,90 @@ VOID Trace(TRACE trace, VOID *v)
     // Visit every basic block in the trace
     for (BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl = BBL_Next(bbl))
     {
-        // Insert a call to CountBbl() before every basic bloc, passing the number of instructions
-        BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)CountBbl, IARG_UINT32, BBL_NumIns(bbl), IARG_END);
+        InstCount *bblInstCount = new InstCount();
+
+        bblInstCount->numInst = BBL_NumIns(bbl);
+
+        // loop over all instructions in the basic block
+        for (INS ins = BBL_InsHead(bbl); INS_Valid(ins); ins = INS_Next(ins))
+        {
+            if (INS_Category(ins) == XED_CATEGORY_INVALID)
+            {
+                continue;
+            }
+            // if memory read instruction
+            if (INS_IsMemoryRead(ins))
+            {
+                bblInstCount->numLoads++;
+            }
+            else if (INS_IsMemoryWrite(ins))
+            {
+                bblInstCount->numStores++;
+                continue;
+            }
+            switch (INS_Category(ins))
+            {
+            case XED_CATEGORY_NOP:
+                bblInstCount->numNops++;
+                break;
+            case XED_CATEGORY_CALL:
+                if (INS_IsDirectCall(ins))
+                    bblInstCount->numDirectCalls++;
+                else
+                    bblInstCount->numIndirectCalls++;
+                break;
+            case XED_CATEGORY_RET:
+                bblInstCount->numReturns++;
+                break;
+            case XED_CATEGORY_UNCOND_BR:
+                bblInstCount->numUncondBranches++;
+                break;
+            case XED_CATEGORY_COND_BR:
+                bblInstCount->numCondBranches++;
+                break;
+            case XED_CATEGORY_LOGICAL:
+                bblInstCount->numLogicalOps++;
+                break;
+            case XED_CATEGORY_ROTATE:
+            case XED_CATEGORY_SHIFT:
+                bblInstCount->numRotateShift++;
+                break;
+            case XED_CATEGORY_FLAGOP:
+                bblInstCount->numFlagOps++;
+                break;
+            case XED_CATEGORY_AVX:
+            case XED_CATEGORY_AVX2:
+            case XED_CATEGORY_AVX2GATHER:
+            case XED_CATEGORY_AVX512:
+                bblInstCount->numVector++;
+                break;
+            case XED_CATEGORY_CMOV:
+                bblInstCount->numCondMoves++;
+                break;
+            case XED_CATEGORY_MMX:
+            case XED_CATEGORY_SSE:
+                bblInstCount->numMMXSSE++;
+                break;
+            case XED_CATEGORY_SYSCALL:
+                bblInstCount->numSysCalls++;
+                break;
+            case XED_CATEGORY_X87_ALU:
+                bblInstCount->numFP++;
+                break;
+            default:
+                bblInstCount->numRest++;
+                break;
+            }
+        }
+
+        // Insert a call to CountBbl() before every basic bloc, passing the pointer to instcount
+        BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)DoInsCount, IARG_UINT64, bblInstCount->numInst, IARG_END);
+        BBL_InsertIfCall(bbl, IPOINT_BEFORE, (AFUNPTR)CheckTerminate, IARG_END);
+        BBL_InsertThenCall(bbl, IPOINT_BEFORE, (AFUNPTR)Terminate, IARG_END);
+        BBL_InsertIfCall(bbl, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
+        BBL_InsertThenCall(bbl, IPOINT_BEFORE, (AFUNPTR)CountBbl, IARG_PTR, bblInstCount, IARG_END);
     }
 }
-
-/*!
- * Increase counter of threads in the application.
- * This function is called for every thread created by the application when it is
- * about to start running (including the root thread).
- * @param[in]   threadIndex     ID assigned by PIN to the new thread
- * @param[in]   ctxt            initial register state for the new thread
- * @param[in]   flags           thread creation flags (OS specific)
- * @param[in]   v               value specified by the tool in the
- *                              PIN_AddThreadStartFunction function call
- */
-VOID ThreadStart(THREADID threadIndex, CONTEXT *ctxt, INT32 flags, VOID *v) { threadCount++; }
 
 /*!
  * Print out analysis results.
@@ -111,10 +242,28 @@ VOID ThreadStart(THREADID threadIndex, CONTEXT *ctxt, INT32 flags, VOID *v) { th
 VOID Fini(INT32 code, VOID *v)
 {
     *out << "===============================================" << endl;
-    *out << "MyPinTool analysis results: " << endl;
+    *out << "HW1 analysis results: " << endl;
     *out << "Number of instructions: " << insCount << endl;
+    *out << "Fast forward at: " << fastForward << endl;
     *out << "Number of basic blocks: " << bblCount << endl;
-    *out << "Number of threads: " << threadCount << endl;
+    *out << "Number of instructions: " << instCount->numInst << endl;
+    *out << "Number of loads: " << instCount->numLoads << endl;
+    *out << "Number of stores: " << instCount->numStores << endl;
+    *out << "Number of nops: " << instCount->numNops << endl;
+    *out << "Number of direct calls: " << instCount->numDirectCalls << endl;
+    *out << "Number of indirect calls: " << instCount->numIndirectCalls << endl;
+    *out << "Number of returns: " << instCount->numReturns << endl;
+    *out << "Number of unconditional branches: " << instCount->numUncondBranches << endl;
+    *out << "Number of conditional branches: " << instCount->numCondBranches << endl;
+    *out << "Number of logical operations: " << instCount->numLogicalOps << endl;
+    *out << "Number of rotate/shift operations: " << instCount->numRotateShift << endl;
+    *out << "Number of flag operations: " << instCount->numFlagOps << endl;
+    *out << "Number of vector operations: " << instCount->numVector << endl;
+    *out << "Number of conditional moves: " << instCount->numCondMoves << endl;
+    *out << "Number of MMX/SSE operations: " << instCount->numMMXSSE << endl;
+    *out << "Number of system calls: " << instCount->numSysCalls << endl;
+    *out << "Number of floating point operations: " << instCount->numFP << endl;
+    *out << "Number of other instructions: " << instCount->numRest << endl;
     *out << "===============================================" << endl;
 }
 
@@ -141,13 +290,13 @@ int main(int argc, char *argv[])
         out = new std::ofstream(fileName.c_str());
     }
 
+    instCount = new InstCount();
+    fastForward = 207 * 1e9;
+
     if (KnobCount)
     {
         // Register function to be called to instrument traces
         TRACE_AddInstrumentFunction(Trace, 0);
-
-        // Register function to be called for every thread before it starts running
-        PIN_AddThreadStartFunction(ThreadStart, 0);
 
         // Register function to be called when the application exits
         PIN_AddFiniFunction(Fini, 0);
