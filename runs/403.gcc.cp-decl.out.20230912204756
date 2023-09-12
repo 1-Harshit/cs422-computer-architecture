@@ -1,0 +1,24 @@
+===============================================
+HW1 analysis results: 
+Number of instructions: 108000000000
+Fast forward at: 107000000000
+Number of basic blocks: 238823262
+Number of instructions: 1000000003
+Number of loads: 338877999
+Number of stores: 165178683
+Number of nops: 3905469
+Number of direct calls: 0
+Number of indirect calls: 396081
+Number of returns: 30619489
+Number of unconditional branches: 31770221
+Number of conditional branches: 145814065
+Number of logical operations: 54602308
+Number of rotate/shift operations: 634876
+Number of flag operations: 0
+Number of vector operations: 0
+Number of conditional moves: 0
+Number of MMX/SSE operations: 0
+Number of system calls: 0
+Number of floating point operations: 0
+Number of other instructions: 567078811
+===============================================

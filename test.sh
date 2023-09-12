@@ -10,8 +10,6 @@ cd spec_2006/403.gcc/ && pin -t ../../obj-ia32/HW1.so -f 107 -o gcc.cp-decl.out 
 
 cd spec_2006/429.mcf/ && pin -t ../../obj-ia32/HW1.so -f 377 -o mcf.out -- ./mcf_base.i386 inp.in > mcf.ref.out 2> mcf.ref.err && cp mcf.out "../../runs/429.mcf.out.$(date +%Y%m%d%H%M%S)" &
 
-sleep 900
-
 cd spec_2006/450.soplex/ && pin -t ../../obj-ia32/HW1.so -f 364 -o soplex.ref.out -- ./soplex_base.i386 -m3500 ref.mps > soplex.ref.ref.out 2> soplex.ref.ref.err && cp soplex.ref.out "../../runs/450.soplex.ref.out.$(date +%Y%m%d%H%M%S)" &
 
 cd spec_2006/456.hmmer/ && pin -t ../../obj-ia32/HW1.so -f 264 -o hmmer.nph3.out -- ./hmmer_base.i386 nph3.hmm swiss41 > hmmer.ref.nph3.out 2> hmmer.ref.nph3.err && cp hmmer.nph3.out "../../runs/456.hmmer.nph3.out.$(date +%Y%m%d%H%M%S)" &
