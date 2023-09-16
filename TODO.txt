@@ -1,0 +1,33 @@
+FIXME: 
+You should only instrument the instructions that actually execute i.e., have
+true predicates. As a result, you should always use INS_InsertPredicatedCall
+method when classifying instructions.
+
+TODO:
+Total instruction count increases by eight, whenever such an instruction is
+encountered.
+
+TODO:
+HEH, If you can, do the instrumentation at basic block level to
+speed up analysis. Prepare a table showing these counts and percentages for
+the applications.
+
+TODO:
+Each element in the sequence
+has two tuples separated by a colon. The first tuple specifies the
+instruction address and the size of the instruction in bytes. The second tuple specifies
+the data address and the amount of data accessed in bytes.
+
+
+TODO:
+You can get the size of an instruction by
+calling INS_Size method. When calculating the instruction footprint, you
+should not use INS_InsertPredicatedCall because even the instructions with
+false predicates do get fetched, decoded, and executed up to the point of examining the predicate. 
+
+FIXME:
+The second tuple specifies the data address and the amount of data accessed in bytes.
+
+ADDRINT memAddr = INS_OperandMemoryBaseReg(ins, memOp) +
+                    INS_OperandMemoryIndexReg(ins, memOp) * INS_OperandMemoryScale(ins, memOp) +
+                    INS_OperandMemoryDisplacement(ins, memOp);

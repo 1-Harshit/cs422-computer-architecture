@@ -10,6 +10,8 @@ using std::cerr;
 using std::endl;
 using std::string;
 
+UINT32 granularity = 4; // bytes
+
 typedef struct _InstMetrics
 {
     UINT64 numInst = 0;
@@ -73,34 +75,6 @@ INT32 Usage()
 // Analysis routines
 /* ===================================================================== */
 
-/*!
- * This function is called for every basic block when it is about to be executed.
- * @param[in]   bblInstCount Instruction of various instructions in the basic block
- * @note use atomic operations for multi-threaded applications
- */
-VOID AnalyseBblMetrics(InstMetrics *bblInstCount)
-{
-    bblCount++;
-    instMetrics->numInst += bblInstCount->numInst;
-    instMetrics->numLoads += bblInstCount->numLoads;
-    instMetrics->numStores += bblInstCount->numStores;
-    instMetrics->numNops += bblInstCount->numNops;
-    instMetrics->numDirectCalls += bblInstCount->numDirectCalls;
-    instMetrics->numIndirectCalls += bblInstCount->numIndirectCalls;
-    instMetrics->numReturns += bblInstCount->numReturns;
-    instMetrics->numUncondBranches += bblInstCount->numUncondBranches;
-    instMetrics->numCondBranches += bblInstCount->numCondBranches;
-    instMetrics->numLogicalOps += bblInstCount->numLogicalOps;
-    instMetrics->numRotateShift += bblInstCount->numRotateShift;
-    instMetrics->numFlagOps += bblInstCount->numFlagOps;
-    instMetrics->numVector += bblInstCount->numVector;
-    instMetrics->numCondMoves += bblInstCount->numCondMoves;
-    instMetrics->numMMXSSE += bblInstCount->numMMXSSE;
-    instMetrics->numSysCalls += bblInstCount->numSysCalls;
-    instMetrics->numFP += bblInstCount->numFP;
-    instMetrics->numRest += bblInstCount->numRest;
-}
-
 VOID DoInsCount(UINT64 bblInsCount)
 {
     insCount += bblInsCount;
@@ -138,87 +112,98 @@ VOID Trace(TRACE trace, VOID *v)
     // Visit every basic block in the trace
     for (BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl = BBL_Next(bbl))
     {
-        InstMetrics *bblInstCount = new InstMetrics();
-
-        bblInstCount->numInst = BBL_NumIns(bbl);
-
         // loop over all instructions in the basic block
         for (INS ins = BBL_InsHead(bbl); INS_Valid(ins); ins = INS_Next(ins))
         {
             if (INS_Category(ins) == XED_CATEGORY_INVALID)
-            {
                 continue;
-            }
-            // if memory read instruction
-            if (INS_IsMemoryRead(ins))
+
+            // instruction size
+            UINT32 insSize = INS_Size(ins);
+
+            // get size of memory read
+            UINT32 memOperands = INS_MemoryOperandCount(ins);
+
+            if (memOperands > 1)
             {
-                bblInstCount->numLoads++;
+                *out << "WARNING: more than one memory operand: " << INS_Disassemble(ins) << endl;
+                *out << "         This tool supports only one memory operand." << endl;
+                PIN_ExitApplication(1);
             }
-            else if (INS_IsMemoryWrite(ins))
+
+            for (UINT32 memOp = 0; memOp < memOperands; memOp++)
             {
-                bblInstCount->numStores++;
-                continue;
+                if (INS_MemoryOperandIsRead(ins, memOp))
+                {
+                    // bblInstCount->numLoads += size / granularity + (size % granularity != 0);
+                }
+                else if (INS_MemoryOperandIsWritten(ins, memOp))
+                {
+                    // bblInstCount->numStores += size / granularity + (size % granularity != 0);
+                }
             }
+
+            /*
             switch (INS_Category(ins))
-            {
-            case XED_CATEGORY_NOP:
-                bblInstCount->numNops++;
-                break;
-            case XED_CATEGORY_CALL:
-                if (INS_IsDirectCall(ins))
-                    bblInstCount->numDirectCalls++;
-                else
-                    bblInstCount->numIndirectCalls++;
-                break;
-            case XED_CATEGORY_RET:
-                bblInstCount->numReturns++;
-                break;
-            case XED_CATEGORY_UNCOND_BR:
-                bblInstCount->numUncondBranches++;
-                break;
-            case XED_CATEGORY_COND_BR:
-                bblInstCount->numCondBranches++;
-                break;
-            case XED_CATEGORY_LOGICAL:
-                bblInstCount->numLogicalOps++;
-                break;
-            case XED_CATEGORY_ROTATE:
-            case XED_CATEGORY_SHIFT:
-                bblInstCount->numRotateShift++;
-                break;
-            case XED_CATEGORY_FLAGOP:
-                bblInstCount->numFlagOps++;
-                break;
-            case XED_CATEGORY_AVX:
-            case XED_CATEGORY_AVX2:
-            case XED_CATEGORY_AVX2GATHER:
-            case XED_CATEGORY_AVX512:
-                bblInstCount->numVector++;
-                break;
-            case XED_CATEGORY_CMOV:
-                bblInstCount->numCondMoves++;
-                break;
-            case XED_CATEGORY_MMX:
-            case XED_CATEGORY_SSE:
-                bblInstCount->numMMXSSE++;
-                break;
-            case XED_CATEGORY_SYSCALL:
-                bblInstCount->numSysCalls++;
-                break;
-            case XED_CATEGORY_X87_ALU:
-                bblInstCount->numFP++;
-                break;
-            default:
-                bblInstCount->numRest++;
-                break;
-            }
+             {
+             case XED_CATEGORY_NOP:
+                 bblInstCount->numNops++;
+                 break;
+             case XED_CATEGORY_CALL:
+                 if (INS_IsDirectCall(ins))
+                     bblInstCount->numDirectCalls++;
+                 else
+                     bblInstCount->numIndirectCalls++;
+                 break;
+             case XED_CATEGORY_RET:
+                 bblInstCount->numReturns++;
+                 break;
+             case XED_CATEGORY_UNCOND_BR:
+                 bblInstCount->numUncondBranches++;
+                 break;
+             case XED_CATEGORY_COND_BR:
+                 bblInstCount->numCondBranches++;
+                 break;
+             case XED_CATEGORY_LOGICAL:
+                 bblInstCount->numLogicalOps++;
+                 break;
+             case XED_CATEGORY_ROTATE:
+             case XED_CATEGORY_SHIFT:
+                 bblInstCount->numRotateShift++;
+                 break;
+             case XED_CATEGORY_FLAGOP:
+                 bblInstCount->numFlagOps++;
+                 break;
+             case XED_CATEGORY_AVX:
+             case XED_CATEGORY_AVX2:
+             case XED_CATEGORY_AVX2GATHER:
+             case XED_CATEGORY_AVX512:
+                 bblInstCount->numVector++;
+                 break;
+             case XED_CATEGORY_CMOV:
+                 bblInstCount->numCondMoves++;
+                 break;
+             case XED_CATEGORY_MMX:
+             case XED_CATEGORY_SSE:
+                 bblInstCount->numMMXSSE++;
+                 break;
+             case XED_CATEGORY_SYSCALL:
+                 bblInstCount->numSysCalls++;
+                 break;
+             case XED_CATEGORY_X87_ALU:
+                 bblInstCount->numFP++;
+                 break;
+             default:
+                 bblInstCount->numRest++;
+                 break;
+             }
+             */
         }
 
-        BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)DoInsCount, IARG_UINT64, bblInstCount->numInst, IARG_END);
         BBL_InsertIfCall(bbl, IPOINT_BEFORE, (AFUNPTR)CheckTerminate, IARG_END);
         BBL_InsertThenCall(bbl, IPOINT_BEFORE, (AFUNPTR)Terminate, IARG_END);
-        BBL_InsertIfCall(bbl, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
-        BBL_InsertThenCall(bbl, IPOINT_BEFORE, (AFUNPTR)AnalyseBblMetrics, IARG_PTR, bblInstCount, IARG_END);
+
+        BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)DoInsCount, IARG_UINT32, BBL_NumIns(bbl), IARG_END);
     }
 }
 
@@ -231,6 +216,7 @@ VOID Trace(TRACE trace, VOID *v)
  */
 VOID Fini(INT32 code, VOID *v)
 {
+    return;
     *out << "===============================================" << endl;
     *out << "HW1 analysis results: " << endl;
     *out << "Number of instructions: " << insCount << endl;
@@ -294,4 +280,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
