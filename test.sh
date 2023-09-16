@@ -20,3 +20,13 @@ cd spec_2006/456.hmmer/ && pin -t ../../obj-ia32/HW1.so -f 264 -o hmmer.nph3.out
 cd spec_2006/471.omnetpp/ && pin -t ../../obj-ia32/HW1.so -f 43 -o omnetpp.out -- ./omnetpp_base.i386 omnetpp.ini > omnetpp.ref.log 2> omnetpp.ref.err && cp omnetpp.out "../../runs/$prefix.471.omnetpp.out.$(date +%Y%m%d%H%M%S)" &
 
 cd spec_2006/483.xalancbmk/ && pin -t ../../obj-ia32/HW1.so -f 1331 -o xalancbmk.out -- ./xalancbmk_base.i386 -v t5.xml xalanc.xsl > xalancbmk.ref.out 2> xalancbmk.ref.err && cp xalancbmk.out "../../runs/$prefix.483.xalancbmk.out.$(date +%Y%m%d%H%M%S)" &
+
+# no out routing
+# cd spec_2006/400.perlbench/ && pin -t ../../obj-ia32/HW1.so -f 207  -- ./perlbench_base.i386 -I./lib diffmail.pl 4 800 10 17 19 300 && cp perlbench.diffmail.out "../../runs/$prefix.400.perlbench.diffmail.out.$(date +%Y%m%d%H%M%S)" && cd -
+# cd spec_2006/401.bzip2/ && pin -t ../../obj-ia32/HW1.so -f 301  -- ./bzip2_base.i386 input.source 280 && cp bzip2.source.out "../../runs/$prefix.401.bzip2.source.out.$(date +%Y%m%d%H%M%S)" && cd -
+# cd spec_2006/403.gcc/ && pin -t ../../obj-ia32/HW1.so -f 107  -- ./gcc_base.i386 cp-decl.i -o cp-decl.s && cp gcc.cp-decl.out "../../runs/$prefix.403.gcc.cp-decl.out.$(date +%Y%m%d%H%M%S)" && cd -
+# cd spec_2006/429.mcf/ && pin -t ../../obj-ia32/HW1.so -f 377  -- ./mcf_base.i386 inp.in && cp mcf.out "../../runs/$prefix.429.mcf.out.$(date +%Y%m%d%H%M%S)" && cd -
+# cd spec_2006/450.soplex/ && pin -t ../../obj-ia32/HW1.so -f 364  -- ./soplex_base.i386 -m3500 ref.mps && cp soplex.ref.out "../../runs/$prefix.450.soplex.ref.out.$(date +%Y%m%d%H%M%S)" && cd -
+# cd spec_2006/456.hmmer/ && pin -t ../../obj-ia32/HW1.so -f 264  -- ./hmmer_base.i386 nph3.hmm swiss41 && cp hmmer.nph3.out "../../runs/$prefix.456.hmmer.nph3.out.$(date +%Y%m%d%H%M%S)" && cd -
+# cd spec_2006/471.omnetpp/ && pin -t ../../obj-ia32/HW1.so -f 43  -- ./omnetpp_base.i386 omnetpp.ini && cp omnetpp.out "../../runs/$prefix.471.omnetpp.out.$(date +%Y%m%d%H%M%S)" && cd -
+# cd spec_2006/483.xalancbmk/ && pin -t ../../obj-ia32/HW1.so -f 1331  -- ./xalancbmk_base.i386 -v t5.xml xalanc.xsl && cp xalancbmk.out "../../runs/$prefix.483.xalancbmk.out.$(date +%Y%m%d%H%M%S)" && cd -
