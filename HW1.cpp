@@ -179,6 +179,26 @@ VOID Trace(TRACE trace, VOID *v)
             // get size of memory read
             UINT32 memOperands = INS_MemoryOperandCount(ins);
 
+            if (memOperands > 1)
+            {
+                *out << "WARNING: more than one memory operand: " << INS_Disassemble(ins) << endl;
+                *out << "         This tool supports only one memory operand." << endl;
+                PIN_ExitApplication(1);
+            }
+
+            for (UINT32 memOp = 0; memOp < memOperands; memOp++)
+            {
+                dataSize = INS_MemoryOperandSize(ins, memOp);
+                if (INS_MemoryOperandIsRead(ins, memOp))
+                {
+                    numLoads = dataSize / granularity + (dataSize % granularity != 0);
+                }
+                if (INS_MemoryOperandIsWritten(ins, memOp))
+                {
+                    numStores = dataSize / granularity + (dataSize % granularity != 0);
+                }
+            }
+
             switch (INS_Category(ins))
             {
             case XED_CATEGORY_NOP:
@@ -231,26 +251,6 @@ VOID Trace(TRACE trace, VOID *v)
             default:
                 instypeaddr = &instMetrics->numRest;
                 break;
-            }
-
-            if (memOperands > 1)
-            {
-                *out << "WARNING: more than one memory operand: " << INS_Disassemble(ins) << endl;
-                *out << "         This tool supports only one memory operand." << endl;
-                PIN_ExitApplication(1);
-            }
-
-            for (UINT32 memOp = 0; memOp < memOperands; memOp++)
-            {
-                dataSize = INS_MemoryOperandSize(ins, memOp);
-                if (INS_MemoryOperandIsRead(ins, memOp))
-                {
-                    numLoads = dataSize / granularity + (dataSize % granularity != 0);
-                }
-                if (INS_MemoryOperandIsWritten(ins, memOp))
-                {
-                    numStores = dataSize / granularity + (dataSize % granularity != 0);
-                }
             }
 
             INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
