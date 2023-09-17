@@ -14,7 +14,6 @@ UINT32 granularity = 4; // bytes
 
 typedef struct _InstMetrics
 {
-    UINT64 numInst = 0;
     UINT64 numLoads = 0;
     UINT64 numStores = 0;
     UINT64 numNops = 0;
@@ -39,7 +38,6 @@ typedef struct _InstMetrics
 /* ================================================================== */
 
 UINT64 insCount = 0; // number of dynamically executed instructions
-UINT64 bblCount = 0; // number of dynamically executed basic blocks
 UINT64 fastForward = 0;
 InstMetrics *instMetrics = 0;
 
@@ -75,7 +73,27 @@ INT32 Usage()
 // Analysis routines
 /* ===================================================================== */
 
-VOID DoInsCount(UINT64 bblInsCount)
+VOID IncrementInstMetrics(void *instypeaddr)
+{
+    UINT64 *instype = (UINT64 *)instypeaddr;
+    *instype += 1;
+}
+
+VOID IncrementInstMetricsLoad(void *instypeaddr, UINT32 numLoads)
+{
+    UINT64 *instype = (UINT64 *)instypeaddr;
+    *instype += 1;
+    instMetrics->numLoads += numLoads;
+}
+
+VOID IncrementInstMetricsStore(void *instypeaddr, UINT32 numStores)
+{
+    UINT64 *instype = (UINT64 *)instypeaddr;
+    *instype += 1;
+    instMetrics->numStores += numStores;
+}
+
+VOID IncrementInsCount(UINT64 bblInsCount)
 {
     insCount += bblInsCount;
 }
@@ -118,11 +136,70 @@ VOID Trace(TRACE trace, VOID *v)
             if (INS_Category(ins) == XED_CATEGORY_INVALID)
                 continue;
 
+            // type A pointer to increment in instruction metrics stucture
+            void *instypeaddr = 0;
+            // type B: number of loads
+            UINT32 numLoads = 0;
+            // type B: number of stores
+            UINT32 numStores = 0;
             // instruction size
             UINT32 insSize = INS_Size(ins);
-
             // get size of memory read
             UINT32 memOperands = INS_MemoryOperandCount(ins);
+
+            switch (INS_Category(ins))
+            {
+            case XED_CATEGORY_NOP:
+                instypeaddr = &instMetrics->numNops;
+                break;
+            case XED_CATEGORY_CALL:
+                if (INS_IsDirectCall(ins))
+                    instypeaddr = &instMetrics->numDirectCalls;
+                else
+                    instypeaddr = &instMetrics->numIndirectCalls;
+                break;
+            case XED_CATEGORY_RET:
+                instypeaddr = &instMetrics->numReturns;
+                break;
+            case XED_CATEGORY_UNCOND_BR:
+                instypeaddr = &instMetrics->numUncondBranches;
+                break;
+            case XED_CATEGORY_COND_BR:
+                instypeaddr = &instMetrics->numCondBranches;
+                break;
+            case XED_CATEGORY_LOGICAL:
+                instypeaddr = &instMetrics->numLogicalOps;
+                break;
+            case XED_CATEGORY_ROTATE:
+            case XED_CATEGORY_SHIFT:
+                instypeaddr = &instMetrics->numRotateShift;
+                break;
+            case XED_CATEGORY_FLAGOP:
+                instypeaddr = &instMetrics->numFlagOps;
+                break;
+            case XED_CATEGORY_AVX:
+            case XED_CATEGORY_AVX2:
+            case XED_CATEGORY_AVX2GATHER:
+            case XED_CATEGORY_AVX512:
+                instypeaddr = &instMetrics->numVector;
+                break;
+            case XED_CATEGORY_CMOV:
+                instypeaddr = &instMetrics->numCondMoves;
+                break;
+            case XED_CATEGORY_MMX:
+            case XED_CATEGORY_SSE:
+                instypeaddr = &instMetrics->numMMXSSE;
+                break;
+            case XED_CATEGORY_SYSCALL:
+                instypeaddr = &instMetrics->numSysCalls;
+                break;
+            case XED_CATEGORY_X87_ALU:
+                instypeaddr = &instMetrics->numFP;
+                break;
+            default:
+                instypeaddr = &instMetrics->numRest;
+                break;
+            }
 
             if (memOperands > 1)
             {
@@ -133,79 +210,37 @@ VOID Trace(TRACE trace, VOID *v)
 
             for (UINT32 memOp = 0; memOp < memOperands; memOp++)
             {
+                UINT32 size = INS_MemoryOperandSize(ins, memOp);
                 if (INS_MemoryOperandIsRead(ins, memOp))
                 {
-                    // bblInstCount->numLoads += size / granularity + (size % granularity != 0);
+                    numLoads = size / granularity + (size % granularity != 0);
                 }
                 else if (INS_MemoryOperandIsWritten(ins, memOp))
                 {
-                    // bblInstCount->numStores += size / granularity + (size % granularity != 0);
+                    numStores = size / granularity + (size % granularity != 0);
                 }
             }
 
-            /*
-            switch (INS_Category(ins))
-             {
-             case XED_CATEGORY_NOP:
-                 bblInstCount->numNops++;
-                 break;
-             case XED_CATEGORY_CALL:
-                 if (INS_IsDirectCall(ins))
-                     bblInstCount->numDirectCalls++;
-                 else
-                     bblInstCount->numIndirectCalls++;
-                 break;
-             case XED_CATEGORY_RET:
-                 bblInstCount->numReturns++;
-                 break;
-             case XED_CATEGORY_UNCOND_BR:
-                 bblInstCount->numUncondBranches++;
-                 break;
-             case XED_CATEGORY_COND_BR:
-                 bblInstCount->numCondBranches++;
-                 break;
-             case XED_CATEGORY_LOGICAL:
-                 bblInstCount->numLogicalOps++;
-                 break;
-             case XED_CATEGORY_ROTATE:
-             case XED_CATEGORY_SHIFT:
-                 bblInstCount->numRotateShift++;
-                 break;
-             case XED_CATEGORY_FLAGOP:
-                 bblInstCount->numFlagOps++;
-                 break;
-             case XED_CATEGORY_AVX:
-             case XED_CATEGORY_AVX2:
-             case XED_CATEGORY_AVX2GATHER:
-             case XED_CATEGORY_AVX512:
-                 bblInstCount->numVector++;
-                 break;
-             case XED_CATEGORY_CMOV:
-                 bblInstCount->numCondMoves++;
-                 break;
-             case XED_CATEGORY_MMX:
-             case XED_CATEGORY_SSE:
-                 bblInstCount->numMMXSSE++;
-                 break;
-             case XED_CATEGORY_SYSCALL:
-                 bblInstCount->numSysCalls++;
-                 break;
-             case XED_CATEGORY_X87_ALU:
-                 bblInstCount->numFP++;
-                 break;
-             default:
-                 bblInstCount->numRest++;
-                 break;
-             }
-             */
+            INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
+            if (numLoads > 0)
+                INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInstMetricsLoad, IARG_PTR, instypeaddr, IARG_UINT32, numLoads, IARG_END);
+            else if (numStores > 0)
+                INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInstMetricsStore, IARG_PTR, instypeaddr, IARG_UINT32, numStores, IARG_END);
+            else
+                INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInstMetrics, IARG_PTR, instypeaddr, IARG_END);
+
+            // INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
+            // INS_InsertThenCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInsCount, IARG_UINT32, insSize, IARG_END);
         }
 
         BBL_InsertIfCall(bbl, IPOINT_BEFORE, (AFUNPTR)CheckTerminate, IARG_END);
         BBL_InsertThenCall(bbl, IPOINT_BEFORE, (AFUNPTR)Terminate, IARG_END);
 
-        BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)DoInsCount, IARG_UINT32, BBL_NumIns(bbl), IARG_END);
+        BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)IncrementInsCount, IARG_UINT32, BBL_NumIns(bbl), IARG_END);
     }
 }
+
+#define PRINT_METRICS(name, total) name << " (" << 100.0 * name / total << "%)" << endl
 
 /*!
  * Print out analysis results.
@@ -216,31 +251,53 @@ VOID Trace(TRACE trace, VOID *v)
  */
 VOID Fini(INT32 code, VOID *v)
 {
-    return;
+    UINT64 total = 0;
+    total += instMetrics->numLoads;
+    total += instMetrics->numStores;
+    total += instMetrics->numNops;
+    total += instMetrics->numDirectCalls;
+    total += instMetrics->numIndirectCalls;
+    total += instMetrics->numReturns;
+    total += instMetrics->numUncondBranches;
+    total += instMetrics->numCondBranches;
+    total += instMetrics->numLogicalOps;
+    total += instMetrics->numRotateShift;
+    total += instMetrics->numFlagOps;
+    total += instMetrics->numVector;
+    total += instMetrics->numCondMoves;
+    total += instMetrics->numMMXSSE;
+    total += instMetrics->numSysCalls;
+    total += instMetrics->numFP;
+    total += instMetrics->numRest;
+
     *out << "===============================================" << endl;
     *out << "HW1 analysis results: " << endl;
     *out << "Number of instructions: " << insCount << endl;
     *out << "Fast forward at: " << fastForward << endl;
-    *out << "Number of basic blocks: " << bblCount << endl;
-    *out << "Number of instructions: " << instMetrics->numInst << endl;
-    *out << "Number of loads: " << instMetrics->numLoads << endl;
-    *out << "Number of stores: " << instMetrics->numStores << endl;
-    *out << "Number of nops: " << instMetrics->numNops << endl;
-    *out << "Number of direct calls: " << instMetrics->numDirectCalls << endl;
-    *out << "Number of indirect calls: " << instMetrics->numIndirectCalls << endl;
-    *out << "Number of returns: " << instMetrics->numReturns << endl;
-    *out << "Number of unconditional branches: " << instMetrics->numUncondBranches << endl;
-    *out << "Number of conditional branches: " << instMetrics->numCondBranches << endl;
-    *out << "Number of logical operations: " << instMetrics->numLogicalOps << endl;
-    *out << "Number of rotate/shift operations: " << instMetrics->numRotateShift << endl;
-    *out << "Number of flag operations: " << instMetrics->numFlagOps << endl;
-    *out << "Number of vector operations: " << instMetrics->numVector << endl;
-    *out << "Number of conditional moves: " << instMetrics->numCondMoves << endl;
-    *out << "Number of MMX/SSE operations: " << instMetrics->numMMXSSE << endl;
-    *out << "Number of system calls: " << instMetrics->numSysCalls << endl;
-    *out << "Number of floating point operations: " << instMetrics->numFP << endl;
-    *out << "Number of other instructions: " << instMetrics->numRest << endl;
-    *out << "===============================================" << endl;
+    *out << "Number of instructions after fast forward: " << insCount - fastForward << endl;
+    *out << "=====================PARTA=====================" << endl;
+    *out << "Number of loads: " << PRINT_METRICS(instMetrics->numLoads, total);
+    *out << "Number of stores: " << PRINT_METRICS(instMetrics->numStores, total);
+    *out << "Number of nops: " << PRINT_METRICS(instMetrics->numNops, total);
+    *out << "Number of direct calls: " << PRINT_METRICS(instMetrics->numDirectCalls, total);
+    *out << "Number of indirect calls: " << PRINT_METRICS(instMetrics->numIndirectCalls, total);
+    *out << "Number of returns: " << PRINT_METRICS(instMetrics->numReturns, total);
+    *out << "Number of unconditional branches: " << PRINT_METRICS(instMetrics->numUncondBranches, total);
+    *out << "Number of conditional branches: " << PRINT_METRICS(instMetrics->numCondBranches, total);
+    *out << "Number of logical operations: " << PRINT_METRICS(instMetrics->numLogicalOps, total);
+    *out << "Number of rotate/shift operations: " << PRINT_METRICS(instMetrics->numRotateShift, total);
+    *out << "Number of flag operations: " << PRINT_METRICS(instMetrics->numFlagOps, total);
+    *out << "Number of vector operations: " << PRINT_METRICS(instMetrics->numVector, total);
+    *out << "Number of conditional moves: " << PRINT_METRICS(instMetrics->numCondMoves, total);
+    *out << "Number of MMX/SSE operations: " << PRINT_METRICS(instMetrics->numMMXSSE, total);
+    *out << "Number of system calls: " << PRINT_METRICS(instMetrics->numSysCalls, total);
+    *out << "Number of floating point operations: " << PRINT_METRICS(instMetrics->numFP, total);
+    *out << "Number of other instructions: " << PRINT_METRICS(instMetrics->numRest, total);
+    *out << "=====================PARTB=====================" << endl;
+    // CPI numloads You should charge each load and store operation a fixed latency of
+    // seventy cycles and every other instruction a latency of one cycle.
+    FLT64 cpi = (instMetrics->numLoads + instMetrics->numStores) * 70 / total + (total - instMetrics->numLoads - instMetrics->numStores) * 1 / total;
+    *out << "CPI: " << cpi << endl;
 }
 
 /*!
