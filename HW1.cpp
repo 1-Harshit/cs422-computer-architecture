@@ -43,6 +43,14 @@ typedef struct _Footprint
     UINT32 size;
 } Footprint;
 
+typedef struct _DataMetrics
+{
+    UINT64 readOperands = 0;
+    UINT64 writeOperands = 0;
+    UINT64 memTouched = 0;
+    UINT64 maxMemTouched = -1;
+} DataMetrics;
+
 /* ================================================================== */
 // Global variables
 /* ================================================================== */
@@ -50,8 +58,10 @@ typedef struct _Footprint
 UINT64 insCount = 0; // number of dynamically executed instructions
 UINT64 fastForward = 0;
 InstMetrics *instMetrics = 0;
+DataMetrics *dataMetrics = 0;
 vector<Footprint> dataFootprint;
 vector<Footprint> insFootprint;
+vector<UINT32> numOperands, numWriteRegs, numReadRegs;
 
 std::ostream *out = &cerr;
 
@@ -91,25 +101,26 @@ VOID IncrementInstMetrics(void *instypeaddr)
     *instype += 1;
 }
 
-VOID IncrementInstMetricsLoad(void *instypeaddr, UINT32 numLoads, VOID *addr, UINT32 size)
-{
-    UINT64 *instype = (UINT64 *)instypeaddr;
-    *instype += 1;
-    instMetrics->numLoads += numLoads;
-    dataFootprint.push_back({addr, size});
-}
-
-VOID IncrementInstMetricsStore(void *instypeaddr, UINT32 numStores, VOID *addr, UINT32 size)
+VOID IncrementInstMetricsLoadStore(void *instypeaddr, UINT32 numStores, UINT32 numLoads, VOID *addr, UINT32 size)
 {
     UINT64 *instype = (UINT64 *)instypeaddr;
     *instype += 1;
     instMetrics->numStores += numStores;
+    instMetrics->numLoads += numLoads;
     dataFootprint.push_back({addr, size});
+    dataMetrics->memTouched += size;
+    dataMetrics->readOperands += numLoads > 0;
+    dataMetrics->writeOperands += numStores > 0;
+    if (dataMetrics->maxMemTouched < size)
+        dataMetrics->maxMemTouched = size;
 }
 
-VOID RecordInstMetrics(VOID *insaddr, UINT32 size)
+VOID RecordInstMetrics(VOID *insaddr, UINT32 size, UINT32 numOperand, UINT32 numWriteReg, UINT32 numReadReg)
 {
     insFootprint.push_back({insaddr, size});
+    numOperands.push_back(numOperand);
+    numWriteRegs.push_back(numWriteReg);
+    numReadRegs.push_back(numReadReg);
 }
 
 VOID IncrementInsCount(UINT64 bblInsCount)
@@ -161,8 +172,6 @@ VOID Trace(TRACE trace, VOID *v)
             UINT32 numLoads = 0;
             // type B: number of stores
             UINT32 numStores = 0;
-            // type C: footprints
-            Footprint *insdatafootprint = 0, *insinsfootprint = new Footprint();
             // instruction size
             UINT32 insSize = INS_Size(ins);
             // data size
@@ -234,27 +243,30 @@ VOID Trace(TRACE trace, VOID *v)
             for (UINT32 memOp = 0; memOp < memOperands; memOp++)
             {
                 dataSize = INS_MemoryOperandSize(ins, memOp);
-                insdatafootprint = new Footprint();
                 if (INS_MemoryOperandIsRead(ins, memOp))
                 {
                     numLoads = dataSize / granularity + (dataSize % granularity != 0);
                 }
-                else if (INS_MemoryOperandIsWritten(ins, memOp))
+                if (INS_MemoryOperandIsWritten(ins, memOp))
                 {
                     numStores = dataSize / granularity + (dataSize % granularity != 0);
                 }
             }
 
             INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
-            if (numLoads > 0)
-                INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInstMetricsLoad, IARG_PTR, instypeaddr, IARG_UINT32, numLoads, IARG_MEMORYOP_EA, 0, IARG_UINT32, dataSize, IARG_END);
-            else if (numStores > 0)
-                INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInstMetricsStore, IARG_PTR, instypeaddr, IARG_UINT32, numStores, IARG_MEMORYOP_EA, 0, IARG_UINT32, dataSize, IARG_END);
+            if (numLoads > 0 || numStores > 0)
+                INS_InsertThenPredicatedCall(
+                    ins, IPOINT_BEFORE, (AFUNPTR)IncrementInstMetricsLoadStore, IARG_PTR, instypeaddr,
+                    IARG_UINT32, numLoads, IARG_UINT32, numStores, IARG_MEMORYOP_EA, 0, IARG_UINT32,
+                    dataSize, IARG_END);
             else
                 INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInstMetrics, IARG_PTR, instypeaddr, IARG_END);
 
             INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
-            INS_InsertThenCall(ins, IPOINT_BEFORE, (AFUNPTR)RecordInstMetrics, IARG_INST_PTR, IARG_UINT32, insSize, IARG_END);
+            INS_InsertThenCall(
+                ins, IPOINT_BEFORE, (AFUNPTR)RecordInstMetrics, IARG_INST_PTR, IARG_UINT32,
+                insSize, IARG_UINT32, INS_OperandCount(ins), IARG_UINT32, INS_MaxNumRRegs(ins),
+                IARG_UINT32, INS_MaxNumWRegs(ins), IARG_END);
         }
 
         BBL_InsertIfCall(bbl, IPOINT_BEFORE, (AFUNPTR)CheckTerminate, IARG_END);
@@ -392,6 +404,7 @@ int main(int argc, char *argv[])
     insFootprint.reserve(ANALYSIS_LEN);
 
     instMetrics = new InstMetrics();
+    dataMetrics = new DataMetrics();
     fastForward = KnobFastForward.Value() * 1e9;
 
     // Register function to be called to instrument traces
