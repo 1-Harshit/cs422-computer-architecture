@@ -6,9 +6,13 @@
 #include "pin.H"
 #include <iostream>
 #include <fstream>
+#include <vector>
 using std::cerr;
 using std::endl;
 using std::string;
+using std::vector;
+
+#define ANALYSIS_LEN UINT64(1e9)
 
 UINT32 granularity = 4; // bytes
 
@@ -33,6 +37,12 @@ typedef struct _InstMetrics
     UINT64 numRest = 0;
 } InstMetrics;
 
+typedef struct _Footprint
+{
+    void *addr;
+    UINT32 size;
+} Footprint;
+
 /* ================================================================== */
 // Global variables
 /* ================================================================== */
@@ -40,6 +50,8 @@ typedef struct _InstMetrics
 UINT64 insCount = 0; // number of dynamically executed instructions
 UINT64 fastForward = 0;
 InstMetrics *instMetrics = 0;
+vector<Footprint> dataFootprint;
+vector<Footprint> insFootprint;
 
 std::ostream *out = &cerr;
 
@@ -79,18 +91,25 @@ VOID IncrementInstMetrics(void *instypeaddr)
     *instype += 1;
 }
 
-VOID IncrementInstMetricsLoad(void *instypeaddr, UINT32 numLoads)
+VOID IncrementInstMetricsLoad(void *instypeaddr, UINT32 numLoads, VOID *addr, UINT32 size)
 {
     UINT64 *instype = (UINT64 *)instypeaddr;
     *instype += 1;
     instMetrics->numLoads += numLoads;
+    dataFootprint.push_back({addr, size});
 }
 
-VOID IncrementInstMetricsStore(void *instypeaddr, UINT32 numStores)
+VOID IncrementInstMetricsStore(void *instypeaddr, UINT32 numStores, VOID *addr, UINT32 size)
 {
     UINT64 *instype = (UINT64 *)instypeaddr;
     *instype += 1;
     instMetrics->numStores += numStores;
+    dataFootprint.push_back({addr, size});
+}
+
+VOID RecordInstMetrics(VOID *insaddr, UINT32 size)
+{
+    insFootprint.push_back({insaddr, size});
 }
 
 VOID IncrementInsCount(UINT64 bblInsCount)
@@ -105,7 +124,7 @@ ADDRINT CheckFastForward(void)
 
 ADDRINT CheckTerminate(void)
 {
-    return (insCount >= fastForward + 1e9);
+    return (insCount >= fastForward + ANALYSIS_LEN);
 }
 
 VOID Terminate(void)
@@ -142,8 +161,12 @@ VOID Trace(TRACE trace, VOID *v)
             UINT32 numLoads = 0;
             // type B: number of stores
             UINT32 numStores = 0;
+            // type C: footprints
+            Footprint *insdatafootprint = 0, *insinsfootprint = new Footprint();
             // instruction size
             UINT32 insSize = INS_Size(ins);
+            // data size
+            UINT32 dataSize = 0;
             // get size of memory read
             UINT32 memOperands = INS_MemoryOperandCount(ins);
 
@@ -210,27 +233,28 @@ VOID Trace(TRACE trace, VOID *v)
 
             for (UINT32 memOp = 0; memOp < memOperands; memOp++)
             {
-                UINT32 size = INS_MemoryOperandSize(ins, memOp);
+                dataSize = INS_MemoryOperandSize(ins, memOp);
+                insdatafootprint = new Footprint();
                 if (INS_MemoryOperandIsRead(ins, memOp))
                 {
-                    numLoads = size / granularity + (size % granularity != 0);
+                    numLoads = dataSize / granularity + (dataSize % granularity != 0);
                 }
                 else if (INS_MemoryOperandIsWritten(ins, memOp))
                 {
-                    numStores = size / granularity + (size % granularity != 0);
+                    numStores = dataSize / granularity + (dataSize % granularity != 0);
                 }
             }
 
             INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
             if (numLoads > 0)
-                INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInstMetricsLoad, IARG_PTR, instypeaddr, IARG_UINT32, numLoads, IARG_END);
+                INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInstMetricsLoad, IARG_PTR, instypeaddr, IARG_UINT32, numLoads, IARG_MEMORYOP_EA, 0, IARG_UINT32, dataSize, IARG_END);
             else if (numStores > 0)
-                INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInstMetricsStore, IARG_PTR, instypeaddr, IARG_UINT32, numStores, IARG_END);
+                INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInstMetricsStore, IARG_PTR, instypeaddr, IARG_UINT32, numStores, IARG_MEMORYOP_EA, 0, IARG_UINT32, dataSize, IARG_END);
             else
                 INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInstMetrics, IARG_PTR, instypeaddr, IARG_END);
 
-            // INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
-            // INS_InsertThenCall(ins, IPOINT_BEFORE, (AFUNPTR)IncrementInsCount, IARG_UINT32, insSize, IARG_END);
+            INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
+            INS_InsertThenCall(ins, IPOINT_BEFORE, (AFUNPTR)RecordInstMetrics, IARG_INST_PTR, IARG_UINT32, insSize, IARG_END);
         }
 
         BBL_InsertIfCall(bbl, IPOINT_BEFORE, (AFUNPTR)CheckTerminate, IARG_END);
@@ -240,17 +264,55 @@ VOID Trace(TRACE trace, VOID *v)
     }
 }
 
+VOID AnalyseFootprint()
+{
+    // sort data footprint vector with respect to address if address same sort with respect to size
+    std::sort(dataFootprint.begin(), dataFootprint.end(), [](const Footprint &a, const Footprint &b)
+              { return a.addr < b.addr || (a.addr == b.addr && a.size < b.size); });
+    // sort instruction footprint vector with respect to address
+    std::sort(insFootprint.begin(), insFootprint.end(), [](const Footprint &a, const Footprint &b)
+              { return a.addr < b.addr || (a.addr == b.addr && a.size < b.size); });
+
+    // count number of unique 32 byte blocks in data footprint
+    UINT64 dataFootprintBlocks = 0, insFootprintBlocks = 0;
+    UINT64 lastAddr = 0;
+    for (UINT64 i = 0; i < dataFootprint.size(); i++)
+    {
+        if (lastAddr < (UINT64)dataFootprint[i].addr)
+            lastAddr = (UINT64)dataFootprint[i].addr - (UINT64)dataFootprint[i].addr % 32;
+        while (lastAddr < (UINT64)dataFootprint[i].addr + dataFootprint[i].size)
+        {
+            lastAddr += 32;
+            dataFootprintBlocks++;
+        }
+    }
+    lastAddr = 0;
+    for (UINT64 i = 0; i < insFootprint.size(); i++)
+    {
+        if (lastAddr < (UINT64)insFootprint[i].addr)
+            lastAddr = (UINT64)insFootprint[i].addr - (UINT64)insFootprint[i].addr % 32;
+        while (lastAddr < (UINT64)insFootprint[i].addr + insFootprint[i].size)
+        {
+            lastAddr += 32;
+            insFootprintBlocks++;
+        }
+    }
+
+    *out << "Number of unique 32 byte blocks in data footprint: " << dataFootprintBlocks << endl;
+    *out << "Number of unique 32 byte blocks in instruction footprint: " << insFootprintBlocks << endl;
+}
+
 #define PRINT_METRICS(name, total) name << " (" << 100.0 * name / total << "%)" << endl
 
-/*!
- * Print out analysis results.
- * This function is called when the application exits.
- * @param[in]   code            exit code of the application
- * @param[in]   v               value specified by the tool in the
- *                              PIN_AddFiniFunction function call
- */
 VOID Fini(INT32 code, VOID *v)
 {
+    if (code != 0)
+    {
+        *out << "===============================================" << endl;
+        *out << "This application is terminated by PIN." << endl;
+        *out << "===============================================" << endl;
+        return;
+    }
     UINT64 total = 0;
     total += instMetrics->numLoads;
     total += instMetrics->numStores;
@@ -298,6 +360,9 @@ VOID Fini(INT32 code, VOID *v)
     // seventy cycles and every other instruction a latency of one cycle.
     FLT64 cpi = (instMetrics->numLoads + instMetrics->numStores) * 70 / total + (total - instMetrics->numLoads - instMetrics->numStores) * 1 / total;
     *out << "CPI: " << cpi << endl;
+    *out << "=====================PARTC=====================" << endl;
+    AnalyseFootprint();
+    *out << "=====================PARTD=====================" << endl;
 }
 
 /*!
@@ -322,6 +387,9 @@ int main(int argc, char *argv[])
     {
         out = new std::ofstream(fileName.c_str());
     }
+
+    dataFootprint.reserve(ANALYSIS_LEN);
+    insFootprint.reserve(ANALYSIS_LEN);
 
     instMetrics = new InstMetrics();
     fastForward = KnobFastForward.Value() * 1e9;
