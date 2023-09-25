@@ -8,6 +8,7 @@
 #include <fstream>
 #include <unordered_set>
 #include <map>
+#include <chrono>
 
 using std::cerr;
 using std::endl;
@@ -48,6 +49,7 @@ typedef struct _InstMetrics
 UINT64 insCount = 0; // number of dynamically executed instructions
 UINT64 fastForward = 0;
 std::ostream *out = &cerr;
+std::chrono::time_point<std::chrono::system_clock> startTime;
 // PART A+B
 InstMetrics *instMetrics = 0;
 // PART C
@@ -538,6 +540,10 @@ VOID Fini(INT32 code, VOID *v)
     *out << "\nFor General max-min:" << endl;
     *out << "INT32_MAX = " << INT32_MAX << endl;
     *out << "INT32_MIN = " << INT32_MIN << endl;
+
+    std::chrono::time_point<std::chrono::system_clock> endTime = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds = endTime - startTime;
+    *out << "\nTime elapsed: " << elapsed_seconds.count() / 60 << " minutes" << endl;
 }
 
 /*!
@@ -555,6 +561,8 @@ int main(int argc, char *argv[])
     {
         return Usage();
     }
+
+    startTime = std::chrono::system_clock::now();
 
     string fileName = KnobOutputFile.Value();
 
