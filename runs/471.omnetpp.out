@@ -1,0 +1,28 @@
+===============================================
+HW1 analysis results: 
+Number of instructions: 44000000000
+Fast forward at: 43000000000
+Number of instructions after fast forward: 1000000000
+=====================PARTA=====================
+Number of loads: 371235142 (23.1873%)
+Number of stores: 229790857 (14.3527%)
+Number of nops: 802401 (0.0501179%)
+Number of direct calls: 21327701 (1.33213%)
+Number of indirect calls: 3689262 (0.230431%)
+Number of returns: 25016957 (1.56256%)
+Number of unconditional branches: 22189687 (1.38597%)
+Number of conditional branches: 117335311 (7.32876%)
+Number of logical operations: 60009414 (3.74818%)
+Number of rotate/shift operations: 7139698 (0.445945%)
+Number of flag operations: 20159918 (1.25919%)
+Number of vector operations: 0 (0%)
+Number of conditional moves: 0 (0%)
+Number of MMX/SSE operations: 0 (0%)
+Number of system calls: 0 (0%)
+Number of floating point operations: 96963673 (6.05635%)
+Number of other instructions: 625365979 (39.0603%)
+=====================PARTB=====================
+CPI: 26.9026
+=====================PARTC=====================
+Number of 32 bytes block for instructions 890
+===============================================
