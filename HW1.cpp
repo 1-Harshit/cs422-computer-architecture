@@ -112,9 +112,9 @@ INT32 Usage()
         insMemOperandsMap[readOperands + writeOperands]++; \
         insMemReadMap[readOperands]++;                     \
         insMemWriteMap[writeOperands]++;                   \
-        if (displacementMin < insDisplacementMin)          \
+        if (displacementMin > insDisplacementMin)          \
             displacementMin = insDisplacementMin;          \
-        if (displacementMax > insDisplacementMax)          \
+        if (displacementMax < insDisplacementMax)          \
             displacementMax = insDisplacementMax;          \
     } while (0)
 
