@@ -11,9 +11,9 @@
 
 using std::cerr;
 using std::endl;
+using std::map;
 using std::string;
 using std::unordered_set;
-using std::map;
 
 UINT32 granularity = 4; // bytes
 
@@ -178,6 +178,9 @@ VOID PredicatedAnalysisMetrics5Mem(PREDICATED_MEM_BASE_SIGNATURE, void *memOpAdd
 VOID PredicatedAnalysisMetrics(UINT64 *insTypeAddr)
 {
     *insTypeAddr += 1;
+    insMemOperandsMap[0]++;
+    insMemReadMap[0]++;
+    insMemWriteMap[0]++;
 }
 
 VOID AnalysisMetrics(void *insAddr, UINT32 insSize, UINT32 operandsCount, UINT32 regReadCount, UINT32 regWriteCount, INT32 insImmediateMin, INT32 insImmediateMax)
@@ -410,7 +413,10 @@ VOID Trace(TRACE trace, VOID *v)
     }
 }
 
-#define PRINT_METRICS(name, total) name << " (" << 100.0 * name / total << "%)" << endl
+#define PRINT_METRICS(name, total)                                                    \
+    std::setw(10) << std::right << name << " (" << std::fixed << std::setprecision(2) \
+                  << std::setw(5) << std::right << (100.0 * name / total) << "%"      \
+                  << ")" << std::endl
 
 VOID Fini(INT32 code, VOID *v)
 {
@@ -441,28 +447,28 @@ VOID Fini(INT32 code, VOID *v)
     total += instMetrics->numRest;
 
     *out << "===============================================" << endl;
-    *out << "HW1 analysis results: " << endl;
+    *out << "HW1 analysis results from " << KnobOutputFile.Value() << endl;
     *out << "Number of instructions: " << insCount << endl;
     *out << "Fast forward at: " << fastForward << endl;
     *out << "Number of instructions after fast forward: " << insCount - fastForward << endl;
     *out << "\n=====================PARTA=====================" << endl;
-    *out << "Number of loads: " << PRINT_METRICS(instMetrics->numLoads, total);
-    *out << "Number of stores: " << PRINT_METRICS(instMetrics->numStores, total);
-    *out << "Number of nops: " << PRINT_METRICS(instMetrics->numNops, total);
-    *out << "Number of direct calls: " << PRINT_METRICS(instMetrics->numDirectCalls, total);
-    *out << "Number of indirect calls: " << PRINT_METRICS(instMetrics->numIndirectCalls, total);
-    *out << "Number of returns: " << PRINT_METRICS(instMetrics->numReturns, total);
-    *out << "Number of unconditional branches: " << PRINT_METRICS(instMetrics->numUncondBranches, total);
-    *out << "Number of conditional branches: " << PRINT_METRICS(instMetrics->numCondBranches, total);
-    *out << "Number of logical operations: " << PRINT_METRICS(instMetrics->numLogicalOps, total);
-    *out << "Number of rotate/shift operations: " << PRINT_METRICS(instMetrics->numRotateShift, total);
-    *out << "Number of flag operations: " << PRINT_METRICS(instMetrics->numFlagOps, total);
-    *out << "Number of vector operations: " << PRINT_METRICS(instMetrics->numVector, total);
-    *out << "Number of conditional moves: " << PRINT_METRICS(instMetrics->numCondMoves, total);
-    *out << "Number of MMX/SSE operations: " << PRINT_METRICS(instMetrics->numMMXSSE, total);
-    *out << "Number of system calls: " << PRINT_METRICS(instMetrics->numSysCalls, total);
-    *out << "Number of floating point operations: " << PRINT_METRICS(instMetrics->numFP, total);
-    *out << "Number of other instructions: " << PRINT_METRICS(instMetrics->numRest, total);
+    *out << std::setw(35) << std::left << "Number of loads:" << PRINT_METRICS(instMetrics->numLoads, total);
+    *out << std::setw(35) << std::left << "Number of stores:" << PRINT_METRICS(instMetrics->numStores, total);
+    *out << std::setw(35) << std::left << "Number of nops:" << PRINT_METRICS(instMetrics->numNops, total);
+    *out << std::setw(35) << std::left << "Number of direct calls:" << PRINT_METRICS(instMetrics->numDirectCalls, total);
+    *out << std::setw(35) << std::left << "Number of indirect calls:" << PRINT_METRICS(instMetrics->numIndirectCalls, total);
+    *out << std::setw(35) << std::left << "Number of returns:" << PRINT_METRICS(instMetrics->numReturns, total);
+    *out << std::setw(35) << std::left << "Number of unconditional branches:" << PRINT_METRICS(instMetrics->numUncondBranches, total);
+    *out << std::setw(35) << std::left << "Number of conditional branches:" << PRINT_METRICS(instMetrics->numCondBranches, total);
+    *out << std::setw(35) << std::left << "Number of logical operations:" << PRINT_METRICS(instMetrics->numLogicalOps, total);
+    *out << std::setw(35) << std::left << "Number of rotate/shift operations:" << PRINT_METRICS(instMetrics->numRotateShift, total);
+    *out << std::setw(35) << std::left << "Number of flag operations:" << PRINT_METRICS(instMetrics->numFlagOps, total);
+    *out << std::setw(35) << std::left << "Number of vector operations:" << PRINT_METRICS(instMetrics->numVector, total);
+    *out << std::setw(35) << std::left << "Number of conditional moves:" << PRINT_METRICS(instMetrics->numCondMoves, total);
+    *out << std::setw(35) << std::left << "Number of MMX/SSE operations:" << PRINT_METRICS(instMetrics->numMMXSSE, total);
+    *out << std::setw(35) << std::left << "Number of system calls:" << PRINT_METRICS(instMetrics->numSysCalls, total);
+    *out << std::setw(35) << std::left << "Number of FP operations:" << PRINT_METRICS(instMetrics->numFP, total);
+    *out << std::setw(35) << std::left << "Number of other instructions:" << PRINT_METRICS(instMetrics->numRest, total);
     *out << "\n=====================PARTB=====================" << endl;
     // CPI numloads You should charge each load and store operation a fixed latency of
     // seventy cycles and every other instruction a latency of one cycle.
