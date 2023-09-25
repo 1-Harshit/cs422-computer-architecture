@@ -6,9 +6,13 @@
 #include "pin.H"
 #include <iostream>
 #include <fstream>
+#include <unordered_set>
+
 using std::cerr;
 using std::endl;
 using std::string;
+using std::unordered_set;
+
 UINT32 granularity = 4; // bytes
 
 typedef struct _InstMetrics
@@ -31,6 +35,7 @@ typedef struct _InstMetrics
     UINT64 numFP = 0;
     UINT64 numRest = 0;
 } InstMetrics;
+
 /* ================================================================== */
 // Global variables
 /* ================================================================== */
@@ -39,6 +44,8 @@ UINT64 insCount = 0; // number of dynamically executed instructions
 UINT64 fastForward = 0;
 InstMetrics *instMetrics = 0;
 
+unordered_set<UINT64> dataFootprint;
+unordered_set<UINT64> insFootprint;
 std::ostream *out = &cerr;
 
 /* ===================================================================== */
@@ -70,6 +77,57 @@ INT32 Usage()
 /* ===================================================================== */
 // Analysis routines
 /* ===================================================================== */
+/*
+VOID PredicatedAnalysisMetrics1Mem(UINT64 *insTypeAddr, UINT32 numLoads, UINT32 numStores, void *memOpAddr1, UINT32 memOpSize1)
+{
+    *insTypeAddr += 1;
+    instMetrics->numLoads += numLoads;
+    instMetrics->numStores += numStores;
+    dataFootprint.push_back({memOpAddr1, memOpSize1});
+}
+
+VOID PredicatedAnalysisMetrics2Mem(UINT64 *insTypeAddr, UINT32 numLoads, UINT32 numStores, void *memOpAddr1, UINT32 memOpSize1, void *memOpAddr2, UINT32 memOpSize2)
+{
+    *insTypeAddr += 1;
+    instMetrics->numLoads += numLoads;
+    instMetrics->numStores += numStores;
+    dataFootprint.push_back({memOpAddr1, memOpSize1});
+    dataFootprint.push_back({memOpAddr2, memOpSize2});
+}
+
+VOID PredicatedAnalysisMetrics3Mem(UINT64 *insTypeAddr, UINT32 numLoads, UINT32 numStores, void *memOpAddr1, UINT32 memOpSize1, void *memOpAddr2, UINT32 memOpSize2, void *memOpAddr3, UINT32 memOpSize3)
+{
+    *insTypeAddr += 1;
+    instMetrics->numLoads += numLoads;
+    instMetrics->numStores += numStores;
+    dataFootprint.push_back({memOpAddr1, memOpSize1});
+    dataFootprint.push_back({memOpAddr2, memOpSize2});
+    dataFootprint.push_back({memOpAddr3, memOpSize3});
+}
+
+VOID PredicatedAnalysisMetrics4Mem(UINT64 *insTypeAddr, UINT32 numLoads, UINT32 numStores, void *memOpAddr1, UINT32 memOpSize1, void *memOpAddr2, UINT32 memOpSize2, void *memOpAddr3, UINT32 memOpSize3, void *memOpAddr4, UINT32 memOpSize4)
+{
+    *insTypeAddr += 1;
+    instMetrics->numLoads += numLoads;
+    instMetrics->numStores += numStores;
+    dataFootprint.push_back({memOpAddr1, memOpSize1});
+    dataFootprint.push_back({memOpAddr2, memOpSize2});
+    dataFootprint.push_back({memOpAddr3, memOpSize3});
+    dataFootprint.push_back({memOpAddr4, memOpSize4});
+}
+
+VOID PredicatedAnalysisMetrics5Mem(UINT64 *insTypeAddr, UINT32 numLoads, UINT32 numStores, void *memOpAddr1, UINT32 memOpSize1, void *memOpAddr2, UINT32 memOpSize2, void *memOpAddr3, UINT32 memOpSize3, void *memOpAddr4, UINT32 memOpSize4, void *memOpAddr5, UINT32 memOpSize5)
+{
+    *insTypeAddr += 1;
+    instMetrics->numLoads += numLoads;
+    instMetrics->numStores += numStores;
+    dataFootprint.push_back({memOpAddr1, memOpSize1});
+    dataFootprint.push_back({memOpAddr2, memOpSize2});
+    dataFootprint.push_back({memOpAddr3, memOpSize3});
+    dataFootprint.push_back({memOpAddr4, memOpSize4});
+    dataFootprint.push_back({memOpAddr5, memOpSize5});
+}
+*/
 
 VOID PredicatedAnalysisMetricsMem(UINT64 *insTypeAddr, UINT32 numLoads, UINT32 numStores)
 {
@@ -81,6 +139,17 @@ VOID PredicatedAnalysisMetricsMem(UINT64 *insTypeAddr, UINT32 numLoads, UINT32 n
 VOID PredicatedAnalysisMetrics(UINT64 *insTypeAddr)
 {
     *insTypeAddr += 1;
+}
+
+VOID AnalysisMetrics(void *insAddr, UINT32 insSize)
+{
+    // assume data access to be in 32 bit chunks and 32 bit alinged
+    // add all addresses in the range of [addr, addr + size) to data footprint
+    // such that for 35-70 {32,64} is added
+    for (UINT64 addr = (UINT64)insAddr / 32; addr < ((UINT64)insAddr + insSize) / 32 + (((UINT64)insAddr + insSize) % 32 != 0); addr++)
+    {
+        insFootprint.insert(addr);
+    }
 }
 
 VOID DoInsCount(UINT32 bblInsCount)
@@ -206,9 +275,64 @@ VOID Trace(TRACE trace, VOID *v)
                 INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)PredicatedAnalysisMetricsMem, IARG_PTR, instypeaddr, IARG_UINT32, numLoads, IARG_UINT32, numStores, IARG_END);
             else
                 INS_InsertThenPredicatedCall(ins, IPOINT_BEFORE, (AFUNPTR)PredicatedAnalysisMetrics, IARG_PTR, instypeaddr, IARG_END);
-            
+
             // INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
-            // INS_InsertThenCall(ins, IPOINT_BEFORE, (AFUNPTR), IARG_END);
+            // switch (memOperands)
+            // {
+            // case 0:
+            //     INS_InsertThenPredicatedCall(
+            //         ins, IPOINT_BEFORE, (AFUNPTR)PredicatedAnalysisMetrics,
+            //         IARG_PTR, instypeaddr, IARG_END);
+            // case 1:
+            //     INS_InsertThenPredicatedCall(
+            //         ins, IPOINT_BEFORE, (AFUNPTR)PredicatedAnalysisMetrics1Mem,
+            //         IARG_PTR, instypeaddr, IARG_UINT32, numLoads, IARG_UINT32, numStores,
+            //         IARG_MEMORYOP_EA, 0, IARG_UINT32, INS_MemoryOperandSize(ins, 0), IARG_END);
+            //     break;
+            // case 2:
+            //     INS_InsertThenPredicatedCall(
+            //         ins, IPOINT_BEFORE, (AFUNPTR)PredicatedAnalysisMetrics2Mem,
+            //         IARG_PTR, instypeaddr, IARG_UINT32, numLoads, IARG_UINT32, numStores,
+            //         IARG_MEMORYOP_EA, 0, IARG_UINT32, INS_MemoryOperandSize(ins, 0),
+            //         IARG_MEMORYOP_EA, 1, IARG_UINT32, INS_MemoryOperandSize(ins, 1), IARG_END);
+            //     break;
+            // case 3:
+            //     INS_InsertThenPredicatedCall(
+            //         ins, IPOINT_BEFORE, (AFUNPTR)PredicatedAnalysisMetrics3Mem,
+            //         IARG_PTR, instypeaddr, IARG_UINT32, numLoads, IARG_UINT32, numStores,
+            //         IARG_MEMORYOP_EA, 0, IARG_UINT32, INS_MemoryOperandSize(ins, 0),
+            //         IARG_MEMORYOP_EA, 1, IARG_UINT32, INS_MemoryOperandSize(ins, 1),
+            //         IARG_MEMORYOP_EA, 2, IARG_UINT32, INS_MemoryOperandSize(ins, 2), IARG_END);
+            //     break;
+            // case 4:
+            //     INS_InsertThenPredicatedCall(
+            //         ins, IPOINT_BEFORE, (AFUNPTR)PredicatedAnalysisMetrics4Mem,
+            //         IARG_PTR, instypeaddr, IARG_UINT32, numLoads, IARG_UINT32, numStores,
+            //         IARG_MEMORYOP_EA, 0, IARG_UINT32, INS_MemoryOperandSize(ins, 0),
+            //         IARG_MEMORYOP_EA, 1, IARG_UINT32, INS_MemoryOperandSize(ins, 1),
+            //         IARG_MEMORYOP_EA, 2, IARG_UINT32, INS_MemoryOperandSize(ins, 2),
+            //         IARG_MEMORYOP_EA, 3, IARG_UINT32, INS_MemoryOperandSize(ins, 3), IARG_END);
+            //     break;
+            // case 5:
+            //     INS_InsertThenPredicatedCall(
+            //         ins, IPOINT_BEFORE, (AFUNPTR)PredicatedAnalysisMetrics5Mem,
+            //         IARG_PTR, instypeaddr, IARG_UINT32, numLoads, IARG_UINT32, numStores,
+            //         IARG_MEMORYOP_EA, 0, IARG_UINT32, INS_MemoryOperandSize(ins, 0),
+            //         IARG_MEMORYOP_EA, 1, IARG_UINT32, INS_MemoryOperandSize(ins, 1),
+            //         IARG_MEMORYOP_EA, 2, IARG_UINT32, INS_MemoryOperandSize(ins, 2),
+            //         IARG_MEMORYOP_EA, 3, IARG_UINT32, INS_MemoryOperandSize(ins, 3),
+            //         IARG_MEMORYOP_EA, 4, IARG_UINT32, INS_MemoryOperandSize(ins, 4), IARG_END);
+            //     break;
+            // default:
+            //     *out << "ERROR: more than 5 memory operands" << endl;
+            //     *out << "ERROR: " << INS_Disassemble(ins) << endl;
+            //     break;
+            // }
+
+            INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
+            INS_InsertThenCall(
+                ins, IPOINT_BEFORE, (AFUNPTR)AnalysisMetrics,
+                IARG_INST_PTR, IARG_UINT32, INS_Size(ins), IARG_END);
         }
         BBL_InsertIfCall(bbl, IPOINT_BEFORE, (AFUNPTR)CheckTerminate, IARG_END);
         BBL_InsertThenCall(bbl, IPOINT_BEFORE, (AFUNPTR)Terminate, IARG_END);
@@ -219,13 +343,6 @@ VOID Trace(TRACE trace, VOID *v)
 
 #define PRINT_METRICS(name, total) name << " (" << 100.0 * name / total << "%)" << endl
 
-/*!
- * Print out analysis results.
- * This function is called when the application exits.
- * @param[in]   code            exit code of the application
- * @param[in]   v               value specified by the tool in the
- *                              PIN_AddFiniFunction function call
- */
 VOID Fini(INT32 code, VOID *v)
 {
     if (code != 0)
@@ -283,6 +400,9 @@ VOID Fini(INT32 code, VOID *v)
     FLT64 cpi = (instMetrics->numLoads + instMetrics->numStores) * 70.0 / total + (total - instMetrics->numLoads - instMetrics->numStores) * 1.0 / total;
     *out << "CPI: " << cpi << endl;
     *out << "=====================PARTC=====================" << endl;
+    // Instruction footprint
+    *out << "Number of 32 bytes block for instructions " << insFootprint.size() << endl;
+    *out << "===============================================" << endl;
 }
 
 /*!
