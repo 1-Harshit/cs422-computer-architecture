@@ -1,0 +1,99 @@
+===============================================
+HW1 analysis results from omnetpp.out
+Number of instructions: 44000000008
+Fast forward at: 43000000000
+Number of instructions after fast forward: 1000000008
+
+=====================PARTA=====================
+Number of loads:                    371234959 (23.19%)
+Number of stores:                   229793822 (14.35%)
+Number of nops:                        802441 ( 0.05%)
+Number of direct calls:              21327948 ( 1.33%)
+Number of indirect calls:             3689214 ( 0.23%)
+Number of returns:                   25017161 ( 1.56%)
+Number of unconditional branches:    22189460 ( 1.39%)
+Number of conditional branches:     117334368 ( 7.33%)
+Number of logical operations:        60009498 ( 3.75%)
+Number of rotate/shift operations:    7139640 ( 0.45%)
+Number of flag operations:           20159546 ( 1.26%)
+Number of vector operations:                0 ( 0.00%)
+Number of conditional moves:                0 ( 0.00%)
+Number of MMX/SSE operations:               0 ( 0.00%)
+Number of system calls:                     0 ( 0.00%)
+Number of FP operations:             96963384 ( 6.06%)
+Number of other instructions:       625367355 (39.06%)
+
+=====================PARTB=====================
+CPI: 26.90
+
+=====================PARTC=====================
+Number of 32 bytes region for data 528737. Size of region is 16919584 bytes
+Number of 32 bytes region for instructions 890. Size of region is 28480 bytes
+
+=====================PARTD=====================
+
+D1 Distribution of instruction length (All Ins)
+Number of Instruction of 1 bytes: 154578966
+Number of Instruction of 2 bytes: 308549842
+Number of Instruction of 3 bytes: 382075664
+Number of Instruction of 4 bytes: 34347978
+Number of Instruction of 5 bytes: 45117290
+Number of Instruction of 6 bytes: 48822927
+Number of Instruction of 7 bytes: 26506927
+Number of Instruction of 10 bytes: 421
+
+D2 Distribution of the number of operands in an instruction (All Ins)
+Number of Instruction of 0 operands: 802441
+Number of Instruction of 1 operands: 225858
+Number of Instruction of 2 operands: 518294502
+Number of Instruction of 3 operands: 281742813
+Number of Instruction of 4 operands: 172764838
+Number of Instruction of 5 operands: 25030753
+Number of Instruction of 6 operands: 1138810
+
+D3 Distribution of the number of register read operands in an instruction (All Ins)
+Number of Instruction of 0 register read operands: 28999921
+Number of Instruction of 1 register read operands: 197518533
+Number of Instruction of 2 register read operands: 540431430
+Number of Instruction of 3 register read operands: 219767246
+Number of Instruction of 4 register read operands: 8457508
+Number of Instruction of 5 register read operands: 3686567
+Number of Instruction of 6 register read operands: 1138810
+
+D4 Distribution of the number of register write operands in an instruction (All Ins)
+Number of Instruction of 0 register write operands: 165351618
+Number of Instruction of 1 register write operands: 665540144
+Number of Instruction of 2 register write operands: 167593437
+Number of Instruction of 3 register write operands: 376006
+Number of Instruction of 4 register write operands: 1138810
+
+D5 Distribution of the number of memory operands in an instruction (Predicated Ins)
+Number of Instruction of 0 memory operands: 449247911
+Number of Instruction of 1 memory operands: 542987095
+Number of Instruction of 2 memory operands: 7765009
+
+D6 Distribution of the number of memory read operands in an instruction (Predicated Ins)
+Number of Instruction of 0 memory read operands: 661701041
+Number of Instruction of 1 memory read operands: 337160164
+Number of Instruction of 2 memory read operands: 1138810
+
+D7 Distribution of the number of memory write operands in an instruction (Predicated Ins)
+Number of Instruction of 0 memory write operands: 780920686
+Number of Instruction of 1 memory write operands: 219079329
+
+D8 Maximum and average number of memory bytes touched by any memory instruction (Predicated Ins)
+Maximum number of memory bytes touched: 8
+Average number of memory bytes touched: 4.22
+
+D9 Maximum and minimum values of the immediate field in an instruction.
+Maximum value of the immediate field: 2147483647
+Minimum value of the immediate field: -2092037281
+
+D10 Maximum and minimum values of the displacement field in a memory instruction(Predicated Ins)
+Maximum value of the displacement field: 136090116
+Minimum value of the displacement field: -104
+===============================================
+
+For General max-min:
+INT32_MAX = 2147483647
+INT32_MIN = -2147483648
