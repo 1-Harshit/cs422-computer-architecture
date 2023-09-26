@@ -1,5 +1,5 @@
 ===============================================
-HW1 analysis results from lbm.ref.out
+HW1 analysis results from lbm.out
 Number of instructions: 831000000113
 Fast forward at:        830000000000
 Number of instructions after fast forward: 1000000113
@@ -95,3 +95,5 @@ Minimum value of the displacement field: -16080
 For General max-min:
 INT32_MAX = 2147483647
 INT32_MIN = -2147483648
+
+Time elapsed: 112.42 minutes

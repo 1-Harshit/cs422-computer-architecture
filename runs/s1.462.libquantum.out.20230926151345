@@ -1,5 +1,5 @@
 ===============================================
-HW1 analysis results from libquantum.ref.out
+HW1 analysis results from libquantum.out
 Number of instructions: 3606000000007
 Fast forward at:        3605000000000
 Number of instructions after fast forward: 1000000007
@@ -88,3 +88,5 @@ Minimum value of the displacement field: -64
 For General max-min:
 INT32_MAX = 2147483647
 INT32_MIN = -2147483648
+
+Time elapsed: 208.28 minutes

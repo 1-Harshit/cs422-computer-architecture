@@ -95,3 +95,5 @@ Minimum value of the displacement field: -580
 For General max-min:
 INT32_MAX = 2147483647
 INT32_MIN = -2147483648
+
+Time elapsed: 17.73 minutes

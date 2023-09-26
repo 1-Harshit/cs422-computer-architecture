@@ -27,7 +27,7 @@ Number of other instructions:       625367355 (39.06%)
 CPI: 26.90
 
 =====================PARTC=====================
-Number of 32 bytes region for data 528737. Size of region is 16919584 bytes
+Number of 32 bytes region for data 528736. Size of region is 16919552 bytes
 Number of 32 bytes region for instructions 890. Size of region is 28480 bytes
 
 =====================PARTD=====================
@@ -97,3 +97,5 @@ Minimum value of the displacement field: -104
 For General max-min:
 INT32_MAX = 2147483647
 INT32_MIN = -2147483648
+
+Time elapsed: 7.34 minutes

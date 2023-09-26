@@ -451,7 +451,7 @@ VOID Fini(INT32 code, VOID *v)
     *out << "===============================================" << endl;
     *out << "HW1 analysis results from " << KnobOutputFile.Value() << endl;
     *out << "Number of instructions: " << insCount << endl;
-    *out << "Fast forward at: " << fastForward << endl;
+    *out << "Fast forward at:        " << fastForward << endl;
     *out << "Number of instructions after fast forward: " << insCount - fastForward << endl;
     *out << "\n=====================PARTA=====================" << endl;
     *out << std::setw(35) << std::left << "Number of loads:" << PRINT_METRICS(instMetrics->numLoads, total);
