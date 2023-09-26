@@ -1,0 +1,93 @@
+===============================================
+HW1 analysis results from mcf.out
+Number of instructions: 378000000001
+Fast forward at: 377000000000
+Number of instructions after fast forward: 1000000001
+
+=====================PARTA=====================
+Number of loads:                    415211920 (27.22%)
+Number of stores:                   110040674 ( 7.21%)
+Number of nops:                       1477639 ( 0.10%)
+Number of direct calls:              12555925 ( 0.82%)
+Number of indirect calls:                   0 ( 0.00%)
+Number of returns:                   12555925 ( 0.82%)
+Number of unconditional branches:     8314820 ( 0.55%)
+Number of conditional branches:     178243364 (11.69%)
+Number of logical operations:        75119491 ( 4.93%)
+Number of rotate/shift operations:    3516374 ( 0.23%)
+Number of flag operations:                  0 ( 0.00%)
+Number of vector operations:                0 ( 0.00%)
+Number of conditional moves:                0 ( 0.00%)
+Number of MMX/SSE operations:               0 ( 0.00%)
+Number of system calls:                     0 ( 0.00%)
+Number of FP operations:                    0 ( 0.00%)
+Number of other instructions:       708216465 (46.43%)
+
+=====================PARTB=====================
+CPI: 24.76
+
+=====================PARTC=====================
+Number of 32 bytes region for data 11672480. Size of region is 373519360 bytes
+Number of 32 bytes region for instructions 65. Size of region is 2080 bytes
+
+=====================PARTD=====================
+
+D1 Distribution of instruction length (All Ins)
+Number of Instruction of 1 bytes: 80626868
+Number of Instruction of 2 bytes: 485391917
+Number of Instruction of 3 bytes: 315525572
+Number of Instruction of 4 bytes: 50530497
+Number of Instruction of 5 bytes: 22077259
+Number of Instruction of 6 bytes: 5249642
+Number of Instruction of 7 bytes: 40598248
+
+D2 Distribution of the number of operands in an instruction (All Ins)
+Number of Instruction of 0 operands: 1477639
+Number of Instruction of 2 operands: 484786163
+Number of Instruction of 3 operands: 457347306
+Number of Instruction of 4 operands: 43832970
+Number of Instruction of 5 operands: 12555925
+
+D3 Distribution of the number of register read operands in an instruction (All Ins)
+Number of Instruction of 0 register read operands: 3760020
+Number of Instruction of 1 register read operands: 148512803
+Number of Instruction of 2 register read operands: 677526614
+Number of Instruction of 3 register read operands: 170200566
+
+D4 Distribution of the number of register write operands in an instruction (All Ins)
+Number of Instruction of 0 register write operands: 70907275
+Number of Instruction of 1 register write operands: 770284482
+Number of Instruction of 2 register write operands: 158769735
+Number of Instruction of 3 register write operands: 38511
+
+D5 Distribution of the number of memory operands in an instruction (Predicated Ins)
+Number of Instruction of 0 memory operands: 487183255
+Number of Instruction of 1 memory operands: 500380902
+Number of Instruction of 2 memory operands: 12435846
+
+D6 Distribution of the number of memory read operands in an instruction (Predicated Ins)
+Number of Instruction of 0 memory read operands: 584788083
+Number of Instruction of 1 memory read operands: 415211920
+
+D7 Distribution of the number of memory write operands in an instruction (Predicated Ins)
+Number of Instruction of 0 memory write operands: 889959329
+Number of Instruction of 1 memory write operands: 110040674
+
+D8 Maximum and average number of memory bytes touched by any memory instruction (Predicated Ins)
+Maximum number of memory bytes touched: 4
+Average number of memory bytes touched: 4.00
+
+D9 Maximum and minimum values of the immediate field in an instruction.
+Maximum value of the immediate field: 1374389535
+Minimum value of the immediate field: -100000000
+
+D10 Maximum and minimum values of the displacement field in a memory instruction(Predicated Ins)
+Maximum value of the displacement field: 134957120
+Minimum value of the displacement field: -76
+===============================================
+
+For General max-min:
+INT32_MAX = 2147483647
+INT32_MIN = -2147483648
+
+Time elapsed: 29.23 minutes
