@@ -27,8 +27,10 @@ Number of other instructions:       557784008 (28.79%)
 CPI: 34.39
 
 =====================PARTC=====================
-Number of 32 bytes region for data 2476189. Size of region is 79238048 bytes
-Number of 32 bytes region for instructions 2631. Size of region is 84192 bytes
+Number of 32 bytes region for data 2476189
+Size of region is 79238048 bytes
+Number of 32 bytes region for instructions 2631
+Size of region is 84192 bytes
 
 =====================PARTD=====================
 

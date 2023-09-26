@@ -27,8 +27,10 @@ Number of other instructions:       853608151 (52.58%)
 CPI: 27.50
 
 =====================PARTC=====================
-Number of 32 bytes region for data 85332. Size of region is 2730624 bytes
-Number of 32 bytes region for instructions 459. Size of region is 14688 bytes
+Number of 32 bytes region for data 85332
+Size of region is 2730624 bytes
+Number of 32 bytes region for instructions 459
+Size of region is 14688 bytes
 
 =====================PARTD=====================
 

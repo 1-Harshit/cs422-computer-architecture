@@ -27,8 +27,10 @@ Number of other instructions:       700121868 (44.81%)
 CPI: 25.84
 
 =====================PARTC=====================
-Number of 32 bytes region for data 31707. Size of region is 1014624 bytes
-Number of 32 bytes region for instructions 2827. Size of region is 90464 bytes
+Number of 32 bytes region for data 31707
+Size of region is 1014624 bytes
+Number of 32 bytes region for instructions 2827
+Size of region is 90464 bytes
 
 =====================PARTD=====================
 

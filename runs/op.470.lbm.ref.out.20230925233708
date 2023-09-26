@@ -27,8 +27,10 @@ Number of other instructions:        16958999 ( 0.86%)
 CPI: 35.02
 
 =====================PARTC=====================
-Number of 32 bytes region for data 13121299. Size of region is 419881568 bytes
-Number of 32 bytes region for instructions 380. Size of region is 12160 bytes
+Number of 32 bytes region for data 13121299
+Size of region is 419881568 bytes
+Number of 32 bytes region for instructions 380
+Size of region is 12160 bytes
 
 =====================PARTD=====================
 

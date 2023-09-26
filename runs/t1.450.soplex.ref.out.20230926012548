@@ -27,8 +27,10 @@ Number of other instructions:       522017229 (31.70%)
 CPI: 28.10
 
 =====================PARTC=====================
-Number of 32 bytes region for data 5677486. Size of region is 181679552 bytes
-Number of 32 bytes region for instructions 1049. Size of region is 33568 bytes
+Number of 32 bytes region for data 5677486
+Size of region is 181679552 bytes
+Number of 32 bytes region for instructions 1049
+Size of region is 33568 bytes
 
 =====================PARTD=====================
 

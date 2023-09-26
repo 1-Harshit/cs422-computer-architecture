@@ -478,8 +478,10 @@ VOID Fini(INT32 code, VOID *v)
     *out << "CPI: " << cpi << endl;
     *out << "\n=====================PARTC=====================" << endl;
     // Instruction footprint
-    *out << "Number of 32 bytes region for data " << dataFootprint.size() << ". Size of region is " << dataFootprint.size() * 32 << " bytes" << endl;
-    *out << "Number of 32 bytes region for instructions " << insFootprint.size() << ". Size of region is " << insFootprint.size() * 32 << " bytes" << endl;
+    *out << "Number of 32 bytes region for data " << dataFootprint.size() << "
+Size of region is " << dataFootprint.size() * 32 << " bytes" << endl;
+    *out << "Number of 32 bytes region for instructions " << insFootprint.size() << "
+Size of region is " << insFootprint.size() * 32 << " bytes" << endl;
     *out << "\n=====================PARTD=====================" << endl;
 
     // Instruction length and frequency
