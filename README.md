@@ -11,7 +11,7 @@ Homework 1 submission of the semester 2023-24-I of CS422 at IIT Kanpur.
 - HW1.cpp : The main pin tool code for the assignment.
 - Makefile : The makefile from pin examples to build the tool.
 - HW1.txt : Problem statement of the assignment.
-- report.pdf : The report for the assignment.
+- [report.pdf](./report.pdf) : The report for the assignment.
 - `runs/` : Contains the output of the tool for the given SPEC2006 benchmarks.
 
 ## Author
