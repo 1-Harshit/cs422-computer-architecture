@@ -449,7 +449,7 @@ VOID Fini(INT32 code, VOID *v)
     total += instMetrics->numRest;
 
     *out << "===============================================" << endl;
-    *out << "HW1 analysis results from " << KnobOutputFile.Value() << endl;
+    *out << "HW2 analysis results from " << KnobOutputFile.Value() << endl;
     *out << "Number of instructions: " << insCount << endl;
     *out << "Fast forward at:        " << fastForward << endl;
     *out << "Number of instructions after fast forward: " << insCount - fastForward << endl;
