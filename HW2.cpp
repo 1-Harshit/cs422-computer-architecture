@@ -247,19 +247,19 @@ VOID PrintMisprictionMetrics(MisPrediction _mp)
 VOID AnalyzeUncondBranch(ADDRINT iaddr, BOOL taken, ADDRINT target)
 {
     BranchType branchType = target > iaddr ? ForwardBranch : BackwardBranch;
-    misPrediction[(UINT32)branchType].Count++;
+    misPrediction[branchType].Count++;
     UINT64 index;
     BOOL sagPrediction, gagPrediction, gsharePrediction, sagGagHybridPrediction, hybridPrediction;
     SaturatingCounter<HYBRID_MP_BITS> *sagGagGshareMetaPredEntry;
 
     // A. Static FNBT
     if (FNBT_PREDICTION(target, iaddr) != taken)
-        misPrediction[(UINT32)branchType].A_static_FNBT++;
+        misPrediction[branchType].A_static_FNBT++;
 
     // B. Bimodal predictor: 512x2-bit PHT
     index = (UINT64)iaddr % BIMODAL_PHT_SIZE;
     if (bimodalPHT[index].isTaken() != taken)
-        misPrediction[(UINT32)branchType].B_bimodal++;
+        misPrediction[branchType].B_bimodal++;
     if (taken)
         bimodalPHT[index].increment();
     else
@@ -269,7 +269,7 @@ VOID AnalyzeUncondBranch(ADDRINT iaddr, BOOL taken, ADDRINT target)
     index = (UINT64)iaddr % SAG_BHT_SIZE;
     sagPrediction = sagPHT[sagBHT[index]].isTaken();
     if (sagPrediction != taken)
-        misPrediction[(UINT32)branchType].C_SAg++;
+        misPrediction[branchType].C_SAg++;
     if (taken)
         sagPHT[sagBHT[index]].increment();
     else
@@ -280,7 +280,7 @@ VOID AnalyzeUncondBranch(ADDRINT iaddr, BOOL taken, ADDRINT target)
     index = GHR_9BIT;
     gagPrediction = gagPHT[index].isTaken();
     if (gagPrediction != taken)
-        misPrediction[(UINT32)branchType].D_GAg++;
+        misPrediction[branchType].D_GAg++;
     if (taken)
         gagPHT[index].increment();
     else
@@ -290,7 +290,7 @@ VOID AnalyzeUncondBranch(ADDRINT iaddr, BOOL taken, ADDRINT target)
     index = GHR_9BIT ^ ((UINT64)iaddr % GSHARE_PHT_SIZE);
     gsharePrediction = gsharePHT[index].isTaken();
     if (gsharePrediction != taken)
-        misPrediction[(UINT32)branchType].E_gshare++;
+        misPrediction[branchType].E_gshare++;
     if (taken)
         gsharePHT[index].increment();
     else
@@ -309,7 +309,7 @@ VOID AnalyzeUncondBranch(ADDRINT iaddr, BOOL taken, ADDRINT target)
         sagGagGshareMetaPredEntry = &gagGshareMetaPred[index];
     }
     if (sagGagHybridPrediction != taken)
-        misPrediction[(UINT32)branchType].F_SAg_GAg++;
+        misPrediction[branchType].F_SAg_GAg++;
 
     if (sagPrediction != gagPrediction)
     {
@@ -323,7 +323,7 @@ VOID AnalyzeUncondBranch(ADDRINT iaddr, BOOL taken, ADDRINT target)
     // Majority of threee
     hybridPrediction = (sagPrediction + gagPrediction + gsharePrediction) >= 2;
     if (hybridPrediction != taken)
-        misPrediction[(UINT32)branchType].G1_SAg_GAg_gshare_majority++;
+        misPrediction[branchType].G1_SAg_GAg_gshare_majority++;
 
     // Tournament
     if (sagGagGshareMetaPredEntry->isTaken())
@@ -339,7 +339,7 @@ VOID AnalyzeUncondBranch(ADDRINT iaddr, BOOL taken, ADDRINT target)
     }
 
     if (hybridPrediction != taken)
-        misPrediction[(UINT32)branchType].G2_SAg_GAg_gshare_tournament++;
+        misPrediction[branchType].G2_SAg_GAg_gshare_tournament++;
 
     GHR_9BIT = ((GHR_9BIT << 1) | taken) & GHR_MASK;
 }
