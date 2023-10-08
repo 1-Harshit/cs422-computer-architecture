@@ -10,6 +10,11 @@
 
 using std::cerr;
 using std::endl;
+using std::fixed;
+using std::left;
+using std::right;
+using std::setprecision;
+using std::setw;
 using std::string;
 
 #define BILLION 1000000000
@@ -17,6 +22,12 @@ using std::string;
 /* ================================================================== */
 // Custom Structures
 /* ================================================================== */
+
+enum BranchType
+{
+    ForwardBranch = 0,
+    BackwardBranch = 1
+};
 
 typedef struct _MisPrediction
 {
@@ -29,6 +40,21 @@ typedef struct _MisPrediction
     UINT64 F_SAg_GAg = 0;
     UINT64 G1_SAg_GAg_gshare_majority = 0;
     UINT64 G2_SAg_GAg_gshare_tournament = 0;
+
+    _MisPrediction operator+(const _MisPrediction &rhs)
+    {
+        _MisPrediction result;
+        result.Count = this->Count + rhs.Count;
+        result.A_static_FNBT = this->A_static_FNBT + rhs.A_static_FNBT;
+        result.B_bimodal = this->B_bimodal + rhs.B_bimodal;
+        result.C_SAg = this->C_SAg + rhs.C_SAg;
+        result.D_GAg = this->D_GAg + rhs.D_GAg;
+        result.E_gshare = this->E_gshare + rhs.E_gshare;
+        result.F_SAg_GAg = this->F_SAg_GAg + rhs.F_SAg_GAg;
+        result.G1_SAg_GAg_gshare_majority = this->G1_SAg_GAg_gshare_majority + rhs.G1_SAg_GAg_gshare_majority;
+        result.G2_SAg_GAg_gshare_tournament = this->G2_SAg_GAg_gshare_tournament + rhs.G2_SAg_GAg_gshare_tournament;
+        return result;
+    }
 } MisPrediction;
 
 template <UINT8 K>
@@ -55,6 +81,65 @@ public:
     }
 };
 
+typedef struct _BTBEntry
+{
+    UINT64 tag;
+    UINT64 target;
+    UINT64 LRUState = 0;
+    BOOL valid = false;
+} BTBEntry;
+
+#define BTB_WAYS 4
+class BTBSet
+{
+    BTBEntry entries[BTB_WAYS];
+
+public:
+    BTBSet() {}
+    inline BTBEntry *find(UINT32 tag)
+    {
+        for (UINT32 i = 0; i < BTB_WAYS; i++)
+        {
+            if (entries[i].valid && entries[i].tag == tag)
+            {
+                entries[i].LRUState = 0;
+                for (UINT32 j = 0; j < BTB_WAYS; j++)
+                {
+                    if (j != i && entries[j].valid)
+                        entries[j].LRUState++;
+                }
+                return &entries[i];
+            }
+        }
+        return NULL;
+    }
+
+    inline VOID insert(UINT64 tag, UINT64 target)
+    {
+        UINT64 maxLRUState = 0;
+        UINT32 maxLRUStateIndex = 0;
+        for (UINT32 i = 0; i < BTB_WAYS; i++)
+        {
+            if (!entries[i].valid)
+            {
+                entries[i].valid = true;
+                entries[i].tag = tag;
+                entries[i].target = target;
+                entries[i].LRUState = 0;
+                return;
+            }
+            else if (entries[i].LRUState > maxLRUState)
+            {
+                maxLRUState = entries[i].LRUState;
+                maxLRUStateIndex = i;
+            }
+        }
+        entries[maxLRUStateIndex].tag = tag;
+        entries[maxLRUStateIndex].target = target;
+        entries[maxLRUStateIndex].LRUState = 0;
+    }
+};
+
 /* ================================================================== */
 // Global variables
 /* ================================================================== */
@@ -65,16 +150,8 @@ std::ostream *out = &cerr;
 std::chrono::time_point<std::chrono::system_clock> startTime;
 
 // PART A
-/*
- * Implement the following conditional branch predictors and count the number of mispredictions.
- * A. Static forward not-taken and backward taken (FNBT)
- * B. Bimodal
- * C. SAg
- * D. GAg
- * E. gshare
- * F. Hybrid of SAg and GAg
- * G. Hybrid of SAg, GAg, and gshare */
-MisPrediction misPrediction;
+// 0: Forwardbranch, 1: BackwardBranch
+MisPrediction misPrediction[2];
 
 // Datastructures for predictors
 #define BIMODAL_PHT_SIZE 512
@@ -108,6 +185,17 @@ SaturatingCounter<HYBRID_MP_BITS> sagGagMetaPred[HYBRID_MP_SIZE];
 SaturatingCounter<HYBRID_MP_BITS> sagGshareMetaPred[HYBRID_MP_SIZE];
 SaturatingCounter<HYBRID_MP_BITS> gagGshareMetaPred[HYBRID_MP_SIZE];
 
+// PART B
+#define BTB_SETS 128
+BTBSet btbPC[BTB_SETS];
+BTBSet btbPCGHR[BTB_SETS];
+// Counts
+UINT64 btbLookupCount = 0;
+UINT64 btbPCMissCount = 0;
+UINT64 btbPCGHRTotalCount = 0;
+#define BTB_PC_GHR_BITS 7
+#define BTB_PC_GHR_MASK ((1 << BTB_PC_GHR_BITS) - 1)
+
 /* ===================================================================== */
 // Command line switches
 /* ===================================================================== */
@@ -120,6 +208,10 @@ KNOB<UINT64> KnobFastForward(KNOB_MODE_WRITEONCE, "pintool", "f", "0",
 /* ===================================================================== */
 // Utilities
 /* ===================================================================== */
+#define LEFT_FMT setw(48) << left
+#define METRICS_FMT(value, total)                                            \
+    setw(9) << right << value << " (" << fixed << setprecision(2) << setw(5) \
+            << right << (100.0 * value / total) << "%)" << endl
 
 INT32 Usage()
 {
@@ -132,27 +224,42 @@ INT32 Usage()
     return -1;
 }
 
+VOID PrintMisprictionMetrics(MisPrediction _mp)
+{
+    *out << LEFT_FMT << "Total number of Unconditional branches: " << setw(9) << right << _mp.Count << endl;
+    *out << LEFT_FMT << "A. Static FNBT: " << METRICS_FMT(_mp.A_static_FNBT, _mp.Count);
+    *out << LEFT_FMT << "B. Bimodal predictor: " << METRICS_FMT(_mp.B_bimodal, _mp.Count);
+    *out << LEFT_FMT << "C. SAg: " << METRICS_FMT(_mp.C_SAg, _mp.Count);
+    *out << LEFT_FMT << "D. GAg: " << METRICS_FMT(_mp.D_GAg, _mp.Count);
+    *out << LEFT_FMT << "E. gshare: " << METRICS_FMT(_mp.E_gshare, _mp.Count);
+    *out << LEFT_FMT << "F. Hybrid of SAg and GAg: " << METRICS_FMT(_mp.F_SAg_GAg, _mp.Count);
+    *out << LEFT_FMT << "G. Hybrid of SAg, GAg, and gshare (majority): " << METRICS_FMT(_mp.G1_SAg_GAg_gshare_majority, _mp.Count);
+    *out << LEFT_FMT << "G. Hybrid of SAg, GAg, and gshare (tournament): " << METRICS_FMT(_mp.G2_SAg_GAg_gshare_tournament, _mp.Count);
+    *out << endl;
+}
+
 /* ===================================================================== */
 // Analysis routines
 /* ===================================================================== */
 
 #define FNBT_PREDICTION(target, iaddr) (target < iaddr)
 
-VOID AnalyzeUncondBranch(VOID *iaddr, BOOL taken, VOID *target)
+VOID AnalyzeUncondBranch(ADDRINT iaddr, BOOL taken, ADDRINT target)
 {
-    misPrediction.Count++;
+    BranchType branchType = target > iaddr ? ForwardBranch : BackwardBranch;
+    misPrediction[(UINT32)branchType].Count++;
     UINT64 index;
     BOOL sagPrediction, gagPrediction, gsharePrediction, sagGagHybridPrediction, hybridPrediction;
     SaturatingCounter<HYBRID_MP_BITS> *sagGagGshareMetaPredEntry;
 
     // A. Static FNBT
     if (FNBT_PREDICTION(target, iaddr) != taken)
-        misPrediction.A_static_FNBT++;
+        misPrediction[(UINT32)branchType].A_static_FNBT++;
 
     // B. Bimodal predictor: 512x2-bit PHT
     index = (UINT64)iaddr % BIMODAL_PHT_SIZE;
     if (bimodalPHT[index].isTaken() != taken)
-        misPrediction.B_bimodal++;
+        misPrediction[(UINT32)branchType].B_bimodal++;
     if (taken)
         bimodalPHT[index].increment();
     else
@@ -162,7 +269,7 @@ VOID AnalyzeUncondBranch(VOID *iaddr, BOOL taken, VOID *target)
     index = (UINT64)iaddr % SAG_BHT_SIZE;
     sagPrediction = sagPHT[sagBHT[index]].isTaken();
     if (sagPrediction != taken)
-        misPrediction.C_SAg++;
+        misPrediction[(UINT32)branchType].C_SAg++;
     if (taken)
         sagPHT[sagBHT[index]].increment();
     else
@@ -173,7 +280,7 @@ VOID AnalyzeUncondBranch(VOID *iaddr, BOOL taken, VOID *target)
     index = GHR_9BIT;
     gagPrediction = gagPHT[index].isTaken();
     if (gagPrediction != taken)
-        misPrediction.D_GAg++;
+        misPrediction[(UINT32)branchType].D_GAg++;
     if (taken)
         gagPHT[index].increment();
     else
@@ -183,7 +290,7 @@ VOID AnalyzeUncondBranch(VOID *iaddr, BOOL taken, VOID *target)
     index = GHR_9BIT ^ ((UINT64)iaddr % GSHARE_PHT_SIZE);
     gsharePrediction = gsharePHT[index].isTaken();
     if (gsharePrediction != taken)
-        misPrediction.E_gshare++;
+        misPrediction[(UINT32)branchType].E_gshare++;
     if (taken)
         gsharePHT[index].increment();
     else
@@ -202,7 +309,7 @@ VOID AnalyzeUncondBranch(VOID *iaddr, BOOL taken, VOID *target)
         sagGagGshareMetaPredEntry = &gagGshareMetaPred[index];
     }
     if (sagGagHybridPrediction != taken)
-        misPrediction.F_SAg_GAg++;
+        misPrediction[(UINT32)branchType].F_SAg_GAg++;
 
     if (sagPrediction != gagPrediction)
     {
@@ -216,7 +323,7 @@ VOID AnalyzeUncondBranch(VOID *iaddr, BOOL taken, VOID *target)
     // Majority of threee
     hybridPrediction = (sagPrediction + gagPrediction + gsharePrediction) >= 2;
     if (hybridPrediction != taken)
-        misPrediction.G1_SAg_GAg_gshare_majority++;
+        misPrediction[(UINT32)branchType].G1_SAg_GAg_gshare_majority++;
 
     // Tournament
     if (sagGagGshareMetaPredEntry->isTaken())
@@ -232,9 +339,32 @@ VOID AnalyzeUncondBranch(VOID *iaddr, BOOL taken, VOID *target)
     }
 
     if (hybridPrediction != taken)
-        misPrediction.G2_SAg_GAg_gshare_tournament++;
+        misPrediction[(UINT32)branchType].G2_SAg_GAg_gshare_tournament++;
 
     GHR_9BIT = ((GHR_9BIT << 1) | taken) & GHR_MASK;
+}
+
+VOID AnalyzeIndirectControlFlow(ADDRINT iaddr, ADDRINT target)
+{
+    btbLookupCount++;
+
+    // 1. Branch target buffer (BTB) indexed with PC
+    UINT64 index = (UINT64)iaddr % BTB_SETS;
+    BTBEntry *entry = btbPC[index].find((UINT64)iaddr);
+    if (entry == NULL || entry->target != (UINT64)target)
+    {
+        btbPCMissCount++;
+        btbPC[index].insert((UINT64)iaddr, (UINT64)target);
+    }
+
+    // 2. Branch target buffer (BTB) indexed with PC and GHR
+    index = ((UINT64)iaddr % BTB_SETS) ^ (GHR_9BIT & BTB_PC_GHR_MASK);
+    entry = btbPCGHR[index].find((UINT64)iaddr);
+    if (entry == NULL || entry->target != (UINT64)target)
+    {
+        btbPCGHRTotalCount++;
+        btbPCGHR[index].insert((UINT64)iaddr, (UINT64)target);
+    }
 }
 
 VOID DoInsCount(UINT32 bblInsCount)
@@ -277,6 +407,14 @@ VOID Trace(TRACE trace, VOID *v)
                 IARG_BRANCH_TAKEN, IARG_BRANCH_TARGET_ADDR, IARG_END);
         }
 
+        if (INS_IsIndirectControlFlow(ins))
+        {
+            INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
+            INS_InsertThenCall(
+                ins, IPOINT_BEFORE, (AFUNPTR)AnalyzeIndirectControlFlow, IARG_INST_PTR,
+                IARG_BRANCH_TARGET_ADDR, IARG_END);
+        }
+
         BBL_InsertIfCall(bbl, IPOINT_BEFORE, (AFUNPTR)CheckTerminate, IARG_END);
         BBL_InsertThenCall(bbl, IPOINT_BEFORE, (AFUNPTR)Terminate, IARG_END);
 
@@ -288,37 +426,35 @@ VOID Fini(INT32 code, VOID *v)
 {
     if (code != 0)
     {
-        *out << "===============================================" << endl;
+        *out << "=====================================================================" << endl;
         *out << "This application is terminated by PIN." << endl;
-        *out << "===============================================" << endl;
+        *out << "=====================================================================" << endl;
         return;
     }
 
-    *out << "===============================================" << endl;
+    *out << "=====================================================================" << endl;
     *out << "HW2 analysis results from " << KnobOutputFile.Value() << endl;
     *out << "Number of instructions: " << insCount << endl;
     *out << "Fast forward at:        " << fastForward << endl;
     *out << "Number of instructions after fast forward: " << insCount - fastForward << endl;
 
-    *out << "===============================================" << endl;
+    *out << "=====================================================================" << endl;
     // PART A: DIRECTION PREDICTORS FOR CONDITIONAL BRANCHES
     *out << "PART A: DIRECTION PREDICTORS FOR CONDITIONAL BRANCHES" << endl;
-    *out << "Mis-prediction counts:" << endl;
-    *out << "Total number of branches: " << misPrediction.Count << endl;
-    *out << "A. Static FNBT: " << misPrediction.A_static_FNBT << endl;
-    *out << "B. Bimodal predictor: " << misPrediction.B_bimodal << endl;
-    *out << "C. SAg: " << misPrediction.C_SAg << endl;
-    *out << "D. GAg: " << misPrediction.D_GAg << endl;
-    *out << "E. gshare: " << misPrediction.E_gshare << endl;
-    *out << "F. Hybrid of SAg and GAg: " << misPrediction.F_SAg_GAg << endl;
-    *out << "G. Hybrid of SAg, GAg, and gshare (majority): " << misPrediction.G1_SAg_GAg_gshare_majority << endl;
-    *out << "G. Hybrid of SAg, GAg, and gshare (tournament): " << misPrediction.G2_SAg_GAg_gshare_tournament << endl;
-
-    *out << "\n===============================================" << endl;
+    *out << endl;
+    *out << "Forward Branch Mis-prediction counts:" << endl;
+    PrintMisprictionMetrics(misPrediction[ForwardBranch]);
+    *out << "Backward Branch Mis-prediction counts:" << endl;
+    PrintMisprictionMetrics(misPrediction[BackwardBranch]);
+    *out << "Overall Mis-prediction counts:" << endl;
+    PrintMisprictionMetrics(misPrediction[ForwardBranch] + misPrediction[BackwardBranch]);
+    *out << "=====================================================================" << endl;
     // PART B: TARGET PREDICTORS FOR INDIRECT CONTROL FLOW INSTRUCTIONS
     *out << "PART B: TARGET PREDICTORS FOR INDIRECT CONTROL FLOW INSTRUCTIONS" << endl;
-
-    *out << "===============================================" << endl;
+    *out << "BTB lookup count:      " << setw(9) << right << btbLookupCount << endl;
+    *out << "BTB PC miss count:     " << METRICS_FMT(btbPCMissCount, btbLookupCount);
+    *out << "BTB PC+GHR miss count: " << METRICS_FMT(btbPCGHRTotalCount, btbLookupCount);
+    *out << "=====================================================================" << endl;
 
     std::chrono::time_point<std::chrono::system_clock> endTime = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds = endTime - startTime;
