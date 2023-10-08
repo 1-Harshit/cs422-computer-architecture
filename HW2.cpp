@@ -454,7 +454,7 @@ VOID Fini(INT32 code, VOID *v)
     *out << "BTB lookup count:      " << setw(9) << right << btbLookupCount << endl;
     *out << "BTB PC miss count:     " << METRICS_FMT(btbPCMissCount, btbLookupCount);
     *out << "BTB PC+GHR miss count: " << METRICS_FMT(btbPCGHRTotalCount, btbLookupCount);
-    *out << "=====================================================================" << endl;
+    *out << "\n=====================================================================" << endl;
 
     std::chrono::time_point<std::chrono::system_clock> endTime = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds = endTime - startTime;
