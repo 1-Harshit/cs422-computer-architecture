@@ -96,7 +96,7 @@ class BTBSet
 
 public:
     BTBSet() {}
-    inline BTBEntry *find(UINT32 tag)
+    inline BTBEntry *find(UINT64 tag)
     {
         for (UINT32 i = 0; i < BTB_WAYS; i++)
         {
@@ -116,6 +116,13 @@ public:
 
     inline VOID insert(UINT64 tag, UINT64 target)
     {
+        BTBEntry *prev = find(tag);
+        if (prev != NULL)
+        {
+            prev->target = target;
+            prev->LRUState = 0;
+            return;
+        }
         UINT64 maxLRUState = 0;
         UINT32 maxLRUStateIndex = 0;
         for (UINT32 i = 0; i < BTB_WAYS; i++)
@@ -164,7 +171,7 @@ SaturatingCounter<BIMODAL_PHT_BITS> bimodalPHT[BIMODAL_PHT_SIZE];
 #define SAG_BHT_SIZE 1024
 #define SAG_BHT_BITS 9
 #define SAG_BHT_MASK ((1 << SAG_BHT_BITS) - 1)
-UINT64 sagBHT[SAG_BHT_SIZE];
+UINT64 sagBHT[SAG_BHT_SIZE] = {0};
 SaturatingCounter<SAG_PHT_BITS> sagPHT[SAG_PHT_SIZE];
 
 #define GHR_BITS 9
