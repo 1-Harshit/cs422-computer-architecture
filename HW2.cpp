@@ -399,20 +399,20 @@ VOID Trace(TRACE trace, VOID *v)
         // loop over all instructions in the basic block
         INS ins = BBL_InsTail(bbl);
 
-        if (INS_Category(ins) == XED_CATEGORY_COND_BR)
-        {
-            INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
-            INS_InsertThenPredicatedCall(
-                ins, IPOINT_BEFORE, (AFUNPTR)AnalyzeUncondBranch, IARG_INST_PTR,
-                IARG_BRANCH_TAKEN, IARG_BRANCH_TARGET_ADDR, IARG_END);
-        }
-
         if (INS_IsIndirectControlFlow(ins))
         {
             INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
             INS_InsertThenPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)AnalyzeIndirectControlFlow, IARG_INST_PTR,
                 IARG_BRANCH_TARGET_ADDR, IARG_END);
+        }
+
+        if (INS_Category(ins) == XED_CATEGORY_COND_BR)
+        {
+            INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
+            INS_InsertThenPredicatedCall(
+                ins, IPOINT_BEFORE, (AFUNPTR)AnalyzeUncondBranch, IARG_INST_PTR,
+                IARG_BRANCH_TAKEN, IARG_BRANCH_TARGET_ADDR, IARG_END);
         }
 
         BBL_InsertIfCall(bbl, IPOINT_BEFORE, (AFUNPTR)CheckTerminate, IARG_END);
