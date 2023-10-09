@@ -1,0 +1,50 @@
+=====================================================================
+HW2 analysis results from gcc.cp-decl.out
+Number of instructions: 108000000000
+Fast forward at:        107000000000
+Number of instructions after fast forward: 1000000000
+=====================================================================
+PART A: DIRECTION PREDICTORS FOR CONDITIONAL BRANCHES
+
+Forward Branch Mis-prediction counts:
+Total number of Unconditional branches:         114550978
+A. Static FNBT:                                  36428889 (31.80%)
+B. Bimodal predictor:                            17354347 (15.15%)
+C. SAg:                                           5992354 ( 5.23%)
+D. GAg:                                          18511686 (16.16%)
+E. gshare:                                       10491808 ( 9.16%)
+F. Hybrid of SAg and GAg:                         4938075 ( 4.31%)
+G. Hybrid of SAg, GAg, and gshare (majority):     6011036 ( 5.25%)
+G. Hybrid of SAg, GAg, and gshare (tournament):   3269249 ( 2.85%)
+
+Backward Branch Mis-prediction counts:
+Total number of Unconditional branches:          31263580
+A. Static FNBT:                                  16918320 (54.12%)
+B. Bimodal predictor:                             1985938 ( 6.35%)
+C. SAg:                                           1264614 ( 4.05%)
+D. GAg:                                           3934062 (12.58%)
+E. gshare:                                        3679744 (11.77%)
+F. Hybrid of SAg and GAg:                          933509 ( 2.99%)
+G. Hybrid of SAg, GAg, and gshare (majority):     1715759 ( 5.49%)
+G. Hybrid of SAg, GAg, and gshare (tournament):    906766 ( 2.90%)
+
+Overall Mis-prediction counts:
+Total number of Unconditional branches:         145814558
+A. Static FNBT:                                  53347209 (36.59%)
+B. Bimodal predictor:                            19340285 (13.26%)
+C. SAg:                                           7256968 ( 4.98%)
+D. GAg:                                          22445748 (15.39%)
+E. gshare:                                       14171552 ( 9.72%)
+F. Hybrid of SAg and GAg:                         5871584 ( 4.03%)
+G. Hybrid of SAg, GAg, and gshare (majority):     7726795 ( 5.30%)
+G. Hybrid of SAg, GAg, and gshare (tournament):   4176015 ( 2.86%)
+
+=====================================================================
+PART B: TARGET PREDICTORS FOR INDIRECT CONTROL FLOW INSTRUCTIONS
+BTB lookup count:       34737132
+BTB PC miss count:      19167021 (55.18%)
+BTB PC+GHR miss count:  10032041 (28.88%)
+
+=====================================================================
+
+Time elapsed: 5.35 minutes
