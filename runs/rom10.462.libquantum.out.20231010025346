@@ -42,9 +42,9 @@ G. Hybrid of SAg, GAg, and gshare (tournament):   1456485 ( 0.93%)
 =====================================================================
 PART B: TARGET PREDICTORS FOR INDIRECT CONTROL FLOW INSTRUCTIONS
 BTB lookup count:         556667
-BTB PC miss count:        278325 (50.00%)
-BTB PC+GHR miss count:        64 ( 0.01%)
+BTB PC miss count:            69 ( 0.01%)
+BTB PC+GHR miss count:        77 ( 0.01%)
 
 =====================================================================
 
-Time elapsed: 99.27 minutes
+Time elapsed: 112.66 minutes

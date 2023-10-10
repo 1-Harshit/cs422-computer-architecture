@@ -8,7 +8,7 @@ PART A: DIRECTION PREDICTORS FOR CONDITIONAL BRANCHES
 
 Forward Branch Mis-prediction counts:
 Total number of Unconditional branches:         104112248
-A. Static FNBT:                                  39244947 (37.69%)
+A. Static FNBT:                                  39244946 (37.69%)
 B. Bimodal predictor:                            10071755 ( 9.67%)
 C. SAg:                                           3698499 ( 3.55%)
 D. GAg:                                          12926998 (12.42%)
@@ -30,7 +30,7 @@ G. Hybrid of SAg, GAg, and gshare (tournament):    578900 ( 2.23%)
 
 Overall Mis-prediction counts:
 Total number of Unconditional branches:         130058161
-A. Static FNBT:                                  53837312 (41.39%)
+A. Static FNBT:                                  53837311 (41.39%)
 B. Bimodal predictor:                            12177840 ( 9.36%)
 C. SAg:                                           4545080 ( 3.49%)
 D. GAg:                                          15250885 (11.73%)
@@ -42,9 +42,9 @@ G. Hybrid of SAg, GAg, and gshare (tournament):   3256845 ( 2.50%)
 =====================================================================
 PART B: TARGET PREDICTORS FOR INDIRECT CONTROL FLOW INSTRUCTIONS
 BTB lookup count:       28121004
-BTB PC miss count:      16651718 (59.21%)
-BTB PC+GHR miss count:   4803470 (17.08%)
+BTB PC miss count:       9808381 (34.88%)
+BTB PC+GHR miss count:   2853817 (10.15%)
 
 =====================================================================
 
-Time elapsed: 8.39 minutes
+Time elapsed: 8.45 minutes
