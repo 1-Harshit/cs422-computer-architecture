@@ -116,13 +116,6 @@ public:
 
     inline VOID insert(UINT64 tag, UINT64 target)
     {
-        BTBEntry *prev = find(tag);
-        if (prev != NULL)
-        {
-            prev->target = target;
-            prev->LRUState = 0;
-            return;
-        }
         UINT64 maxLRUState = 0;
         UINT32 maxLRUStateIndex = 0;
         for (UINT32 i = 0; i < BTB_WAYS; i++)
@@ -199,7 +192,9 @@ BTBSet btbPCGHR[BTB_SETS];
 // Counts
 UINT64 btbLookupCount = 0;
 UINT64 btbPCMissCount = 0;
-UINT64 btbPCGHRTotalCount = 0;
+UINT64 btbPCMisPredCount = 0;
+UINT64 btbPCGHRMissCount = 0;
+UINT64 btbPCGHRMisPredCount = 0;
 #define BTB_PC_GHR_BITS 7
 #define BTB_PC_GHR_MASK ((1 << BTB_PC_GHR_BITS) - 1)
 
@@ -216,9 +211,10 @@ KNOB<UINT64> KnobFastForward(KNOB_MODE_WRITEONCE, "pintool", "f", "0",
 // Utilities
 /* ===================================================================== */
 #define LEFT_FMT setw(48) << left
-#define METRICS_FMT(value, total)                                            \
+#define METRICS_FMT_INLINE(value, total)                                     \
     setw(9) << right << value << " (" << fixed << setprecision(2) << setw(5) \
-            << right << (100.0 * value / total) << "%)" << endl
+            << right << (100.0 * value / total) << "%)"
+#define METRICS_FMT(value, total) METRICS_FMT_INLINE(value, total) << endl
 
 INT32 Usage()
 {
@@ -358,19 +354,31 @@ VOID AnalyzeIndirectControlFlow(ADDRINT iaddr, ADDRINT target)
     // 1. Branch target buffer (BTB) indexed with PC
     UINT64 index = (UINT64)iaddr % BTB_SETS;
     BTBEntry *entry = btbPC[index].find((UINT64)iaddr);
-    if (entry == NULL || entry->target != (UINT64)target)
+    if (entry == NULL)
     {
         btbPCMissCount++;
         btbPC[index].insert((UINT64)iaddr, (UINT64)target);
+    }
+    else if (entry->target != (UINT64)target)
+    {
+        btbPCMisPredCount++;
+        entry->target = (UINT64)target;
+        entry->LRUState = 0;
     }
 
     // 2. Branch target buffer (BTB) indexed with PC and GHR
     index = ((UINT64)iaddr % BTB_SETS) ^ (GHR_9BIT & BTB_PC_GHR_MASK);
     entry = btbPCGHR[index].find((UINT64)iaddr);
-    if (entry == NULL || entry->target != (UINT64)target)
+    if (entry == NULL)
     {
-        btbPCGHRTotalCount++;
+        btbPCGHRMissCount++;
         btbPCGHR[index].insert((UINT64)iaddr, (UINT64)target);
+    }
+    else if (entry->target != (UINT64)target)
+    {
+        btbPCGHRMisPredCount++;
+        entry->target = (UINT64)target;
+        entry->LRUState = 0;
     }
 }
 
@@ -458,9 +466,10 @@ VOID Fini(INT32 code, VOID *v)
     *out << "=====================================================================" << endl;
     // PART B: TARGET PREDICTORS FOR INDIRECT CONTROL FLOW INSTRUCTIONS
     *out << "PART B: TARGET PREDICTORS FOR INDIRECT CONTROL FLOW INSTRUCTIONS" << endl;
-    *out << "BTB lookup count:      " << setw(9) << right << btbLookupCount << endl;
-    *out << "BTB PC miss count:     " << METRICS_FMT(btbPCMissCount, btbLookupCount);
-    *out << "BTB PC+GHR miss count: " << METRICS_FMT(btbPCGHRTotalCount, btbLookupCount);
+    *out << "BTB lookup count: " << setw(9) << right << btbLookupCount << endl;
+    *out << "\n                       Misprediction              Miss" << endl;
+    *out << "BTB PC count:     " << METRICS_FMT_INLINE(btbPCMisPredCount, btbLookupCount) << METRICS_FMT(btbPCMissCount, btbLookupCount);
+    *out << "BTB PC+GHR count: " << METRICS_FMT_INLINE(btbPCGHRMisPredCount, btbLookupCount) << METRICS_FMT(btbPCGHRMissCount, btbLookupCount);
     *out << "\n=====================================================================" << endl;
 
     std::chrono::time_point<std::chrono::system_clock> endTime = std::chrono::system_clock::now();
