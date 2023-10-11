@@ -1,0 +1,30 @@
+=====================================================================
+HW2 analysis results from bzip2.source.out
+Number of instructions: 302000000003
+Fast forward at:        301000000000
+Number of instructions after fast forward: 1000000003
+=====================================================================
+PART A: DIRECTION PREDICTORS FOR CONDITIONAL BRANCHES
+
+Type                                                       Forward            Backward             Overall
+Total number of Unconditional branches:          63177343            66745809           129923152           
+A. Static FNBT:                                  19578181 (30.99%)   41345366 (61.94%)   60923547 (46.89%)  
+B. Bimodal predictor:                             6860732 (10.86%)    6137243 ( 9.19%)   12997975 (10.00%)  
+C. SAg:                                           7063471 (11.18%)    5841630 ( 8.75%)   12905101 ( 9.93%)  
+D. GAg:                                           9305143 (14.73%)    6922182 (10.37%)   16227325 (12.49%)  
+E. gshare:                                        7649415 (12.11%)    7030582 (10.53%)   14679997 (11.30%)  
+F. Hybrid of SAg and GAg:                         6619302 (10.48%)    5493610 ( 8.23%)   12112912 ( 9.32%)  
+G. Hybrid of SAg, GAg, and gshare (majority):     6420994 (10.16%)    5571959 ( 8.35%)   11992953 ( 9.23%)  
+G. Hybrid of SAg, GAg, and gshare (tournament):   6196099 ( 9.81%)    5405046 ( 8.10%)   11601145 ( 8.93%)  
+
+=====================================================================
+PART B: TARGET PREDICTORS FOR INDIRECT CONTROL FLOW INSTRUCTIONS
+BTB lookup count:    791934
+
+                       Misprediction              Miss
+BTB PC count:        382394 (48.29%)       59 ( 0.01%)
+BTB PC+GHR count:    376140 (47.50%)      214 ( 0.03%)
+
+=====================================================================
+
+Time elapsed: 9.15 minutes
