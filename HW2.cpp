@@ -409,7 +409,7 @@ VOID Trace(TRACE trace, VOID *v)
         if (INS_IsIndirectControlFlow(ins))
         {
             INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
-            INS_InsertThenPredicatedCall(
+            INS_InsertThenCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)AnalyzeIndirectControlFlow, IARG_INST_PTR,
                 IARG_BRANCH_TARGET_ADDR, IARG_END);
         }
@@ -417,7 +417,7 @@ VOID Trace(TRACE trace, VOID *v)
         if (INS_Category(ins) == XED_CATEGORY_COND_BR)
         {
             INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)CheckFastForward, IARG_END);
-            INS_InsertThenPredicatedCall(
+            INS_InsertThenCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)AnalyzeUncondBranch, IARG_INST_PTR,
                 IARG_BRANCH_TAKEN, IARG_BRANCH_TARGET_ADDR, IARG_END);
         }
