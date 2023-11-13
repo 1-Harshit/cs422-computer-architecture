@@ -7,6 +7,7 @@
 /* Macro and type definitions */
 #define BILLION 1000000000
 #define MAX_MEM_OPS 7
+#define BLOCK_SIZE_LOG 6
 
 using namespace std;
 
@@ -50,69 +51,67 @@ VOID Terminate(void)
 	PIN_ExitApplication(0);
 }
 
-VOID addFootPrint(ADDRINT addr, UINT32 size)
+VOID recordFootPrint(ADDRINT addr, UINT32 size)
 {
-	ADDRINT block = addr >> 5;
-	ADDRINT last_block = (addr + size - 1) >> 5;
+	ADDRINT block = addr >> BLOCK_SIZE_LOG;
+	ADDRINT last_block = (addr + size - 1) >> BLOCK_SIZE_LOG;
 	do
 	{
 		block;
 
-		if (block == last_block)
-			break;
 		block++;
 	} while (block < last_block);
 }
 
 VOID RecordInsType1(ADDRINT memOp1Addr, UINT32 memOp1Size)
 {
-	addFootPrint(memOp1Addr, memOp1Size);
+	recordFootPrint(memOp1Addr, memOp1Size);
 }
 
 VOID RecordInsType2(ADDRINT memOp1Addr, UINT32 memOp1Size, ADDRINT memOp2Addr, UINT32 memOp2Size)
 {
-	addFootPrint(memOp1Addr, memOp1Size);
-	addFootPrint(memOp2Addr, memOp2Size);
+	recordFootPrint(memOp1Addr, memOp1Size);
+	recordFootPrint(memOp2Addr, memOp2Size);
 }
 
 VOID RecordInsType3(ADDRINT memOp1Addr, UINT32 memOp1Size, ADDRINT memOp2Addr, UINT32 memOp2Size,
 					ADDRINT memOp3Addr, UINT32 memOp3Size)
 {
-	addFootPrint(memOp1Addr, memOp1Size);
-	addFootPrint(memOp2Addr, memOp2Size);
-	addFootPrint(memOp3Addr, memOp3Size);
+	recordFootPrint(memOp1Addr, memOp1Size);
+	recordFootPrint(memOp2Addr, memOp2Size);
+	recordFootPrint(memOp3Addr, memOp3Size);
 }
 
 VOID RecordInsType4(ADDRINT memOp1Addr, UINT32 memOp1Size, ADDRINT memOp2Addr, UINT32 memOp2Size,
 					ADDRINT memOp3Addr, UINT32 memOp3Size, ADDRINT memOp4Addr, UINT32 memOp4Size)
 {
-	addFootPrint(memOp1Addr, memOp1Size);
-	addFootPrint(memOp2Addr, memOp2Size);
-	addFootPrint(memOp3Addr, memOp3Size);
-	addFootPrint(memOp4Addr, memOp4Size);
+	recordFootPrint(memOp1Addr, memOp1Size);
+	recordFootPrint(memOp2Addr, memOp2Size);
+	recordFootPrint(memOp3Addr, memOp3Size);
+	recordFootPrint(memOp4Addr, memOp4Size);
 }
 
 VOID RecordInsType5(ADDRINT memOp1Addr, UINT32 memOp1Size, ADDRINT memOp2Addr, UINT32 memOp2Size,
 					ADDRINT memOp3Addr, UINT32 memOp3Size, ADDRINT memOp4Addr, UINT32 memOp4Size,
 					ADDRINT memOp5Addr, UINT32 memOp5Size)
 {
-	addFootPrint(memOp1Addr, memOp1Size);
-	addFootPrint(memOp2Addr, memOp2Size);
-	addFootPrint(memOp3Addr, memOp3Size);
-	addFootPrint(memOp4Addr, memOp4Size);
-	addFootPrint(memOp5Addr, memOp5Size);
+	recordFootPrint(memOp1Addr, memOp1Size);
+	recordFootPrint(memOp2Addr, memOp2Size);
+	recordFootPrint(memOp3Addr, memOp3Size);
+	recordFootPrint(memOp4Addr, memOp4Size);
+	recordFootPrint(memOp5Addr, memOp5Size);
 }
 
 VOID RecordInsType6(ADDRINT memOp1Addr, UINT32 memOp1Size, ADDRINT memOp2Addr, UINT32 memOp2Size,
 					ADDRINT memOp3Addr, UINT32 memOp3Size, ADDRINT memOp4Addr, UINT32 memOp4Size,
 					ADDRINT memOp5Addr, UINT32 memOp5Size, ADDRINT memOp6Addr, UINT32 memOp6Size)
 {
-	addFootPrint(memOp1Addr, memOp1Size);
-	addFootPrint(memOp2Addr, memOp2Size);
-	addFootPrint(memOp3Addr, memOp3Size);
-	addFootPrint(memOp4Addr, memOp4Size);
-	addFootPrint(memOp5Addr, memOp5Size);
-	addFootPrint(memOp6Addr, memOp6Size);
+	recordFootPrint(memOp1Addr, memOp1Size);
+	recordFootPrint(memOp2Addr, memOp2Size);
+	recordFootPrint(memOp3Addr, memOp3Size);
+	recordFootPrint(memOp4Addr, memOp4Size);
+	recordFootPrint(memOp5Addr, memOp5Size);
+	recordFootPrint(memOp6Addr, memOp6Size);
 }
 
 /*
@@ -153,8 +152,8 @@ VOID Instruction(INS ins, VOID *v)
 				/* Add new memory operand. */
 				effectiveMemOps++;
 				IARGLIST_AddArguments(args,
-									  IARG_MEMORYOP_EA, memOp,						  // Effective memory address
-									  IARG_UINT32, INS_MemoryOperandSize(ins, memOp), // memory access size
+									  IARG_MEMORYOP_EA, memOp,	 // Effective memory address
+									  IARG_MEMORYOP_SIZE, memOp, // memory access size
 									  IARG_END);
 			}
 		}
@@ -166,8 +165,8 @@ VOID Instruction(INS ins, VOID *v)
 				/* Add new memory operand. */
 				effectiveMemOps++;
 				IARGLIST_AddArguments(args,
-									  IARG_MEMORYOP_EA, memOp,						  // Effective memory address
-									  IARG_UINT32, INS_MemoryOperandSize(ins, memOp), // memory access size
+									  IARG_MEMORYOP_EA, memOp,	 // Effective memory address
+									  IARG_MEMORYOP_SIZE, memOp, // memory access size
 									  IARG_END);
 			}
 		}
