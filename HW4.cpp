@@ -60,7 +60,7 @@ VOID recordFootPrint(ADDRINT addr, UINT32 size)
 		block;
 
 		block++;
-	} while (block < last_block);
+	} while (block <= last_block);
 }
 
 VOID RecordInsType1(ADDRINT memOp1Addr, UINT32 memOp1Size)
