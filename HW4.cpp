@@ -22,6 +22,8 @@ using std::chrono::time_point;
 ostream *out = &cerr;
 time_point<system_clock> start_time;
 LRUCache lru_cache;
+SRRIPCache srrip_cache;
+NRUCache nru_cache;
 
 UINT64 icount = 0;	   // number of dynamically executed instructions
 UINT64 fastForwardIns; // number of instruction to fast forward
@@ -67,6 +69,8 @@ VOID recordFootPrint(ADDRINT addr, UINT32 size)
 	do
 	{
 		lru_cache.access(block);
+		srrip_cache.access(block);
+		nru_cache.access(block);
 
 		block++;
 	} while (block <= last_block);
@@ -213,9 +217,11 @@ VOID Fini(INT32 code, VOID *v)
 	*out << "Number of instructions after fast forward: " << icount - fastForwardIns << endl;
 
 	*out << "=====================================================================" << endl;
-
 	lru_cache.dumpstats(out);
-
+	*out << "=====================================================================" << endl;
+	srrip_cache.dumpstats(out);
+	*out << "=====================================================================" << endl;
+	nru_cache.dumpstats(out);
 	*out << "=====================================================================" << endl;
 	time_point<system_clock> end_time = system_clock::now();
 	duration<double> elapsed_seconds = end_time - start_time;
