@@ -1,18 +1,27 @@
 #include <iostream>
 #include <fstream>
-#include <set>
-#include "pin.H"
 #include <cstdlib>
+#include "pin.H"
+#include "HW4.hpp"
 
 /* Macro and type definitions */
 #define BILLION 1000000000
 #define MAX_MEM_OPS 7
 #define BLOCK_SIZE_LOG 6
 
-using namespace std;
+using std::cerr;
+using std::endl;
+using std::ofstream;
+using std::ostream;
+using std::string;
+using std::chrono::duration;
+using std::chrono::system_clock;
+using std::chrono::time_point;
 
 /* Global variables */
-std::ostream *out = &cerr;
+ostream *out = &cerr;
+time_point<system_clock> start_time;
+LRUCache lru_cache;
 
 UINT64 icount = 0;	   // number of dynamically executed instructions
 UINT64 fastForwardIns; // number of instruction to fast forward
@@ -57,7 +66,7 @@ VOID recordFootPrint(ADDRINT addr, UINT32 size)
 	ADDRINT last_block = (addr + size - 1) >> BLOCK_SIZE_LOG;
 	do
 	{
-		block;
+		lru_cache.access(block);
 
 		block++;
 	} while (block <= last_block);
@@ -205,7 +214,12 @@ VOID Fini(INT32 code, VOID *v)
 
 	*out << "=====================================================================" << endl;
 
+	lru_cache.dumpstats(out);
+
 	*out << "=====================================================================" << endl;
+	time_point<system_clock> end_time = system_clock::now();
+	duration<double> elapsed_seconds = end_time - start_time;
+	*out << "\nTime elapsed: " << elapsed_seconds.count() / 60 << " minutes" << endl;
 }
 
 int main(int argc, char *argv[])
@@ -215,13 +229,15 @@ int main(int argc, char *argv[])
 	if (PIN_Init(argc, argv))
 		return Usage();
 
+	start_time = system_clock::now();
+
 	/* Set number of instructions to fast forward and simulate */
 	fastForwardIns = KnobFastForward.Value() * BILLION;
 
 	string fileName = KnobOutputFile.Value();
 
 	if (!fileName.empty())
-		out = new std::ofstream(fileName.c_str());
+		out = new ofstream(fileName.c_str());
 
 	// Register function to be called to instrument instructions
 	INS_AddInstrumentFunction(Instruction, 0);
