@@ -8,6 +8,8 @@
 using std::cerr;
 using std::endl;
 using std::ostream;
+using std::right;
+using std::setw;
 
 #define KB 1024											 // 2^10 bytes
 #define BLOCK_SIZE 64									 // 64 bytes
@@ -97,13 +99,17 @@ struct Stats
 
 	void dumpstats(ostream *out)
 	{
-		*out << "L1 Accesses: " << l1_accesses << endl;
-		*out << "L1 Misses: " << l1_misses << " " << (double)l1_misses / l1_accesses << endl;
-		*out << "L2 Accesses: " << l2_accesses << endl;
-		*out << "L2 Misses: " << l2_misses << " " << (double)l2_misses / l2_accesses << endl;
-		*out << "L2 Block Fills: " << l2_block_fills << endl;
-		*out << "L2 Evicts at 0 Hit: " << l2_evicts_at_0_hit << " " << (double)l2_evicts_at_0_hit / l2_block_fills << endl;
-		*out << "L2 Evicts atleast 2 Hits: " << l2_evicts_at_2_or_more_hits << " " << frac_l2_evicts_atleast_2_hits() << endl;
+		*out << "L1 Accesses:              " << setw(10) << right << l1_accesses << endl;
+		*out << "L1 Misses:                " << setw(10) << right << l1_misses << " "
+			 << (double)l1_misses / l1_accesses << endl;
+		*out << "L2 Accesses:              " << setw(10) << right << l2_accesses << endl;
+		*out << "L2 Misses:                " << setw(10) << right << l2_misses << " "
+			 << (double)l2_misses / l2_accesses << endl;
+		*out << "L2 Block Fills:           " << setw(10) << right << l2_block_fills << endl;
+		*out << "L2 Evicts at 0 Hit:       " << setw(10) << right << l2_evicts_at_0_hit << " "
+			 << (double)l2_evicts_at_0_hit / l2_block_fills << endl;
+		*out << "L2 Evicts atleast 2 Hits: " << setw(10) << right << l2_evicts_at_2_or_more_hits
+			 << " " << frac_l2_evicts_atleast_2_hits() << endl;
 	}
 };
 
