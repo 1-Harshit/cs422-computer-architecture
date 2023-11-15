@@ -399,6 +399,127 @@ public:
 
 class NRUCache
 {
+private:
+	CacheSet<L1_SET_WAYS> _l1_cache[L1_SET_SIZE];
+	CacheSet<L2_SET_WAYS> _l2_cache[L2_SET_SIZE];
+	block_t _l2_mru[L2_SET_SIZE];
+	timee_t _time;
+	Stats _stats;
+
+	void move_to_L1(block_t block)
+	{
+		CacheLine &line = _l1_cache[L1_IDX(block)].find_LRU();
+		if (line.valid)
+		{
+			block_t evict_block = line.block;
+			CacheLine &l2_line = _l2_cache[L2_IDX(evict_block)].find(evict_block);
+			if (l2_line.valid && l2_line.block == evict_block)
+			{
+				l2_line.inl1 = 0;
+			}
+			else
+			{
+				cerr << "L2 inclusion violation - NRU ML1" << endl;
+				exit(1);
+			}
+		}
+		line.valid = true;
+		line.block = block;
+		line.time = _time;
+	}
+
+	void move_to_L2(block_t block)
+	{
+		_stats.l2_block_fills++;
+		CacheLine &line = _l2_cache[L2_IDX(block)].find_NRU(_l2_mru[L2_IDX(block)]);
+		if (line.valid)
+		{
+			if (line.hits == 0)
+				_stats.l2_evicts_at_0_hit++;
+			else if (line.hits == 1)
+				_stats.l2_evicts_at_1_hit++;
+			else
+				_stats.l2_evicts_at_2_or_more_hits++;
+		}
+		line.valid = true;
+		line.block = block;
+		line.inl1 = 1;
+		line.hits = 0;
+		line.ref = 1;
+		_l2_mru[L2_IDX(block)] = block;
+	}
+
+	bool l1_lookup(block_t block)
+	{
+		_stats.l1_accesses++;
+		CacheLine &line = _l1_cache[L1_IDX(block)].find(block);
+		if (line.valid && line.block == block)
+		{
+			// L1 hit
+			line.time = _time;
+			CacheLine &l2_line = _l2_cache[L2_IDX(block)].find(block);
+			if (l2_line.valid && l2_line.block == block)
+			{
+				l2_line.inl1 = 1;
+			}
+			else
+			{
+				cerr << "L2 inclusion violation - NRU" << endl;
+				exit(1);
+			}
+			return true;
+		}
+		_stats.l1_misses++;
+		return false;
+	}
+
+	bool l2_lookup(block_t block)
+	{
+		_stats.l2_accesses++;
+		CacheLine &line = _l2_cache[L2_IDX(block)].find(block);
+		if (line.valid && line.block == block)
+		{
+			// L2 hit
+			line.hits++;
+			line.ref = 1;
+			line.inl1 = 1;
+			_l2_mru[L2_IDX(block)] = block;
+			return true;
+		}
+		_stats.l2_misses++;
+		return false;
+	}
+
+public:
+	NRUCache()
+	{
+		_time = 0;
+	}
+	void access(unsigned block)
+	{
+		_time++;
+
+		if (l1_lookup(block))
+			return;
+
+		// L1 miss
+		if (l2_lookup(block))
+		{
+			// L2 hit
+			move_to_L1(block);
+			return;
+		}
+
+		// L2 miss
+		move_to_L2(block);
+		move_to_L1(block);
+	}
+
+	void dumpstats(ostream *out)
+	{
+		*out << "NRU Cache Statistics" << endl;
+		_stats.dumpstats(out);
+	}
 };
 
 #endif // !__HW4_HPP__

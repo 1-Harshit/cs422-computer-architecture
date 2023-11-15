@@ -23,7 +23,7 @@ ostream *out = &cerr;
 time_point<system_clock> start_time;
 LRUCache lru_cache;
 SRRIPCache srrip_cache;
-// NRUCache nru_cache;
+NRUCache nru_cache;
 
 UINT64 icount = 0;	   // number of dynamically executed instructions
 UINT64 fastForwardIns; // number of instruction to fast forward
@@ -70,7 +70,7 @@ VOID recordFootPrint(ADDRINT addr, UINT32 size)
 	{
 		lru_cache.access(block);
 		srrip_cache.access(block);
-		// nru_cache.access(block);
+		nru_cache.access(block);
 
 		block++;
 	} while (block <= last_block);
@@ -204,25 +204,25 @@ VOID Fini(INT32 code, VOID *v)
 {
 	if (code != 0)
 	{
-		*out << "=====================================================================" << endl;
+		*out << "======================================================" << endl;
 		*out << "This application is terminated by PIN." << endl;
-		*out << "=====================================================================" << endl;
+		*out << "======================================================" << endl;
 		return;
 	}
 
-	*out << "=====================================================================" << endl;
+	*out << "======================================================" << endl;
 	*out << "HW4 analysis results from " << KnobOutputFile.Value() << endl;
 	*out << "Number of instructions: " << icount << endl;
 	*out << "Fast forward at:        " << fastForwardIns << endl;
 	*out << "Number of instructions after fast forward: " << icount - fastForwardIns << endl;
 
-	*out << "=====================================================================" << endl;
+	*out << "======================================================" << endl;
 	lru_cache.dumpstats(out);
-	*out << "=====================================================================" << endl;
+	*out << "======================================================" << endl;
 	srrip_cache.dumpstats(out);
-	*out << "=====================================================================" << endl;
-	// nru_cache.dumpstats(out);
-	*out << "=====================================================================" << endl;
+	*out << "======================================================" << endl;
+	nru_cache.dumpstats(out);
+	*out << "======================================================" << endl;
 	time_point<system_clock> end_time = system_clock::now();
 	duration<double> elapsed_seconds = end_time - start_time;
 	*out << "\nTime elapsed: " << elapsed_seconds.count() / 60 << " minutes" << endl;
@@ -251,11 +251,11 @@ int main(int argc, char *argv[])
 	// Register function to be called when the application exits
 	PIN_AddFiniFunction(Fini, 0);
 
-	cerr << "=====================================================================" << endl;
+	cerr << "======================================================" << endl;
 	cerr << "This application is instrumented by HW4" << endl;
 	if (!KnobOutputFile.Value().empty())
 		cerr << "See file " << KnobOutputFile.Value() << " for analysis results" << endl;
-	cerr << "=====================================================================" << endl;
+	cerr << "======================================================" << endl;
 
 	// Start the program, never returns
 	PIN_StartProgram();
