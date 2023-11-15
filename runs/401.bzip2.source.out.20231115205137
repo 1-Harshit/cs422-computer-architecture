@@ -1,0 +1,35 @@
+======================================================
+HW4 analysis results from bzip2.source.out
+Number of instructions: 302000000000
+Fast forward at:        301000000000
+Number of instructions after fast forward: 1000000000
+======================================================
+LRU Cache Statistics
+L1 Accesses:               683880211
+L1 Misses:                   8429627 0.0123262
+L2 Accesses:                 8429627
+L2 Misses:                   4456862 0.528714
+L2 Block Fills:              4456862
+L2 Evicts at 0 Hit:          3020358 0.677687
+L2 Evicts atleast 2 Hits:     732428 0.515751
+======================================================
+SRRIP Cache Statistics
+L1 Accesses:               683880211
+L1 Misses:                   8429627 0.0123262
+L2 Accesses:                 8429627
+L2 Misses:                   4511853 0.535238
+L2 Block Fills:              4511853
+L2 Evicts at 0 Hit:          3388094 0.750932
+L2 Evicts atleast 2 Hits:     681330 0.615266
+======================================================
+NRU Cache Statistics
+L1 Accesses:               683880211
+L1 Misses:                   8429627 0.0123262
+L2 Accesses:                 8429627
+L2 Misses:                   4476881 0.531089
+L2 Block Fills:              4476881
+L2 Evicts at 0 Hit:          3023671 0.675397
+L2 Evicts atleast 2 Hits:     729305 0.507581
+======================================================
+
+Time elapsed: 35.2186 minutes

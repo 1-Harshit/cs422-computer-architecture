@@ -1,0 +1,35 @@
+======================================================
+HW4 analysis results from omnetpp.out
+Number of instructions: 44000000000
+Fast forward at:        43000000000
+Number of instructions after fast forward: 1000000000
+======================================================
+LRU Cache Statistics
+L1 Accesses:               562158854
+L1 Misses:                  13625467 0.0242378
+L2 Accesses:                13625467
+L2 Misses:                  10170292 0.746418
+L2 Block Fills:             10170292
+L2 Evicts at 0 Hit:          8258928 0.812064
+L2 Evicts atleast 2 Hits:     687583 0.362844
+======================================================
+SRRIP Cache Statistics
+L1 Accesses:               562158854
+L1 Misses:                  13625467 0.0242378
+L2 Accesses:                13625467
+L2 Misses:                  10158661 0.745564
+L2 Block Fills:             10158661
+L2 Evicts at 0 Hit:          8669448 0.853405
+L2 Evicts atleast 2 Hits:     724202 0.491708
+======================================================
+NRU Cache Statistics
+L1 Accesses:               562158854
+L1 Misses:                  13625467 0.0242378
+L2 Accesses:                13625467
+L2 Misses:                  10183176 0.747363
+L2 Block Fills:             10183176
+L2 Evicts at 0 Hit:          8236107 0.808796
+L2 Evicts atleast 2 Hits:     681429 0.352947
+======================================================
+
+Time elapsed: 6.28211 minutes

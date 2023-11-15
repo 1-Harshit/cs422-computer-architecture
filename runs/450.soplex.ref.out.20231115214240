@@ -1,0 +1,35 @@
+======================================================
+HW4 analysis results from soplex.ref.out
+Number of instructions: 365000000000
+Fast forward at:        364000000000
+Number of instructions after fast forward: 1000000000
+======================================================
+LRU Cache Statistics
+L1 Accesses:               501370443
+L1 Misses:                  19141842 0.038179
+L2 Accesses:                19141842
+L2 Misses:                  18372923 0.95983
+L2 Block Fills:             18372923
+L2 Evicts at 0 Hit:         18006923 0.980079
+L2 Evicts atleast 2 Hits:      75174 0.215019
+======================================================
+SRRIP Cache Statistics
+L1 Accesses:               501370443
+L1 Misses:                  19141842 0.038179
+L2 Accesses:                19141842
+L2 Misses:                  18330181 0.957598
+L2 Block Fills:             18330181
+L2 Evicts at 0 Hit:         18012033 0.982643
+L2 Evicts atleast 2 Hits:      97217 0.322162
+======================================================
+NRU Cache Statistics
+L1 Accesses:               501370443
+L1 Misses:                  19141842 0.038179
+L2 Accesses:                19141842
+L2 Misses:                  18379004 0.960148
+L2 Block Fills:             18379004
+L2 Evicts at 0 Hit:         18009467 0.979894
+L2 Evicts atleast 2 Hits:      78663 0.222745
+======================================================
+
+Time elapsed: 86.2816 minutes

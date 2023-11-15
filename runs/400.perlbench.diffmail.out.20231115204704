@@ -1,0 +1,35 @@
+======================================================
+HW4 analysis results from perlbench.diffmail.out
+Number of instructions: 208000000000
+Fast forward at:        207000000000
+Number of instructions after fast forward: 1000000000
+======================================================
+LRU Cache Statistics
+L1 Accesses:               561911617
+L1 Misses:                    904040 0.00160887
+L2 Accesses:                  904040
+L2 Misses:                     17179 0.0190025
+L2 Block Fills:                17179
+L2 Evicts at 0 Hit:             1531 0.0891204
+L2 Evicts atleast 2 Hits:         11 0.458333
+======================================================
+SRRIP Cache Statistics
+L1 Accesses:               561911617
+L1 Misses:                    904040 0.00160887
+L2 Accesses:                  904040
+L2 Misses:                     17179 0.0190025
+L2 Block Fills:                17179
+L2 Evicts at 0 Hit:             1555 0.0905175
+L2 Evicts atleast 2 Hits:          0 0
+======================================================
+NRU Cache Statistics
+L1 Accesses:               561911617
+L1 Misses:                    904040 0.00160887
+L2 Accesses:                  904040
+L2 Misses:                     17306 0.019143
+L2 Block Fills:                17306
+L2 Evicts at 0 Hit:             1478 0.0854039
+L2 Evicts atleast 2 Hits:        172 0.843137
+======================================================
+
+Time elapsed: 30.6749 minutes

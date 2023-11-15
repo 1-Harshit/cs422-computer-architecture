@@ -1,0 +1,35 @@
+======================================================
+HW4 analysis results from xalancbmk.out
+Number of instructions: 1332000000000
+Fast forward at:        1331000000000
+Number of instructions after fast forward: 1000000000
+======================================================
+LRU Cache Statistics
+L1 Accesses:               515883242
+L1 Misses:                  13763275 0.0266791
+L2 Accesses:                13763275
+L2 Misses:                   2334683 0.169631
+L2 Block Fills:              2334683
+L2 Evicts at 0 Hit:          1359210 0.582182
+L2 Evicts atleast 2 Hits:     540912 0.563985
+======================================================
+SRRIP Cache Statistics
+L1 Accesses:               515883242
+L1 Misses:                  13763275 0.0266791
+L2 Accesses:                13763275
+L2 Misses:                   2266251 0.164659
+L2 Block Fills:              2266251
+L2 Evicts at 0 Hit:          1427797 0.630026
+L2 Evicts atleast 2 Hits:     479012 0.58269
+======================================================
+NRU Cache Statistics
+L1 Accesses:               515883242
+L1 Misses:                  13763275 0.0266791
+L2 Accesses:                13763275
+L2 Misses:                   2342443 0.170195
+L2 Block Fills:              2342443
+L2 Evicts at 0 Hit:          1363965 0.582283
+L2 Evicts atleast 2 Hits:     538147 0.55935
+======================================================
+
+Time elapsed: 170.407 minutes

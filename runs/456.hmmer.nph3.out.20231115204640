@@ -1,0 +1,35 @@
+======================================================
+HW4 analysis results from hmmer.nph3.out
+Number of instructions: 265000000000
+Fast forward at:        264000000000
+Number of instructions after fast forward: 1000000000
+======================================================
+LRU Cache Statistics
+L1 Accesses:               623357688
+L1 Misses:                   3262170 0.00523322
+L2 Accesses:                 3262170
+L2 Misses:                   1604124 0.491735
+L2 Block Fills:              1604124
+L2 Evicts at 0 Hit:          1533491 0.955968
+L2 Evicts atleast 2 Hits:      16541 0.304909
+======================================================
+SRRIP Cache Statistics
+L1 Accesses:               623357688
+L1 Misses:                   3262170 0.00523322
+L2 Accesses:                 3262170
+L2 Misses:                   1549385 0.474955
+L2 Block Fills:              1549385
+L2 Evicts at 0 Hit:          1494190 0.964376
+L2 Evicts atleast 2 Hits:      17495 0.450774
+======================================================
+NRU Cache Statistics
+L1 Accesses:               623357688
+L1 Misses:                   3262170 0.00523322
+L2 Accesses:                 3262170
+L2 Misses:                   1593535 0.488489
+L2 Block Fills:              1593535
+L2 Evicts at 0 Hit:          1512860 0.949374
+L2 Evicts atleast 2 Hits:      19902 0.309561
+======================================================
+
+Time elapsed: 30.276 minutes

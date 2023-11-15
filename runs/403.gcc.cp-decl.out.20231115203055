@@ -1,0 +1,35 @@
+======================================================
+HW4 analysis results from gcc.cp-decl.out
+Number of instructions: 108000000000
+Fast forward at:        107000000000
+Number of instructions after fast forward: 1000000000
+======================================================
+LRU Cache Statistics
+L1 Accesses:               497493426
+L1 Misses:                  23086059 0.0464048
+L2 Accesses:                23086059
+L2 Misses:                   5004216 0.216764
+L2 Block Fills:              5004216
+L2 Evicts at 0 Hit:          4743790 0.947959
+L2 Evicts atleast 2 Hits:     116188 0.476098
+======================================================
+SRRIP Cache Statistics
+L1 Accesses:               497493426
+L1 Misses:                  23086059 0.0464048
+L2 Accesses:                23086059
+L2 Misses:                   4994283 0.216333
+L2 Block Fills:              4994283
+L2 Evicts at 0 Hit:          4751024 0.951293
+L2 Evicts atleast 2 Hits:     118773 0.523517
+======================================================
+NRU Cache Statistics
+L1 Accesses:               497493426
+L1 Misses:                  23086059 0.0464048
+L2 Accesses:                23086059
+L2 Misses:                   5009856 0.217008
+L2 Block Fills:              5009856
+L2 Evicts at 0 Hit:          4744744 0.947082
+L2 Evicts atleast 2 Hits:     119660 0.481088
+======================================================
+
+Time elapsed: 14.5258 minutes

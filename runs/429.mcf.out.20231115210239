@@ -1,0 +1,35 @@
+======================================================
+HW4 analysis results from mcf.out
+Number of instructions: 378000000000
+Fast forward at:        377000000000
+Number of instructions after fast forward: 1000000000
+======================================================
+LRU Cache Statistics
+L1 Accesses:               525252592
+L1 Misses:                  68233880 0.129907
+L2 Accesses:                68233880
+L2 Misses:                  33528245 0.491372
+L2 Block Fills:             33528245
+L2 Evicts at 0 Hit:         20454557 0.610069
+L2 Evicts atleast 2 Hits:    2357225 0.180529
+======================================================
+SRRIP Cache Statistics
+L1 Accesses:               525252592
+L1 Misses:                  68233880 0.129907
+L2 Accesses:                68233880
+L2 Misses:                  34429944 0.504587
+L2 Block Fills:             34429944
+L2 Evicts at 0 Hit:         22882323 0.664605
+L2 Evicts atleast 2 Hits:    2106989 0.18272
+======================================================
+NRU Cache Statistics
+L1 Accesses:               525252592
+L1 Misses:                  68233880 0.129907
+L2 Accesses:                68233880
+L2 Misses:                  33760314 0.494773
+L2 Block Fills:             33760314
+L2 Evicts at 0 Hit:         20504228 0.607347
+L2 Evicts atleast 2 Hits:    2449971 0.185047
+======================================================
+
+Time elapsed: 46.2605 minutes
